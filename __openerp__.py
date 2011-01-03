@@ -29,7 +29,7 @@
     "depends" : ["base", "product"],
     "init_xml" : [],
     "demo_xml" : [],
-    "update_xml" : [],
+    "update_xml" : ['views/menus.yml'],
     "active": False,
     "test":[],
     "installable": True

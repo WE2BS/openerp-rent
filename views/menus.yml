@@ -1,0 +1,12 @@
+-
+  !record { model: ir.actions.act_window, id: rent_action_create }:
+    name: Record a new rent
+    res_model: rent.rent
+    view_type: form
+    view_mode: form
+    help: Hey !
+-
+  !menuitem { id: rent_menu, name: Rent }
+-
+  !menuitem { id: rent_menu_create, name: Record a new rent (TEST MENU ITEM),
+    parent: rent_menu, action: rent_action_create }
