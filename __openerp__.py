@@ -17,3 +17,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+{
+    "name" : "Rent",
+    "version" : "0.1",
+    "author" : "Thibaut DIRLIK (WE2BS)",
+    "category" : "Generic Modules/Sales & Purchases",
+    "website" : "http://www.openerp.com",
+    "description": """
+        This module manages the leasing of products to partners.
+    """,
+    "depends" : ["base", "product"],
+    "init_xml" : [],
+    "demo_xml" : [],
+    "update_xml" : [],
+    "active": False,
+    "test":[],
+    "installable": True
+}
