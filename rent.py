@@ -20,6 +20,7 @@
 import datetime
 
 from osv import osv, fields
+from tools.translate import _
 
 class Rent(osv.osv):
 
@@ -36,33 +37,39 @@ class Rent(osv.osv):
     about "who rents what". Look at the rent_invoicing module for invoicing possibility.
     """
 
-    def on_date_changed(self, cursor, user_id, ids, begin_date, end_date):
+    def on_date_changed(self, cursor, user_id, ids, begin_date_str, end_date_str):
 
         """
         This method is called when the begin or end date changed. We update the duration
         field if both dates are correctly filled.
         """
 
-        format = "%Y-%m-%d %H:%M:%S"
-        empty = {}
+        print begin_date_str, end_date_str
 
-        if not (begin_date and end_date):
-            return empty
+        format = "%Y-%d-%m %H:%M:%S"
+        result = {'value' : {}}
 
+        if not (begin_date_str and end_date_str):
+            return result
+
+        # FIXME: The format seems to be always the same from my tests.
+        # Nothing prove that it's the case, if somebody has any clue.
         try:
-            begin_date = datetime.datetime.strptime(begin_date, format)
-            end_date = datetime.datetime.strptime(end_date, format)
-        except ValueError:
-            print 'Unable to use strptime() with the specified format.'
-            return empty
+            begin_date = datetime.datetime.strptime(begin_date_str, format)
+            end_date = datetime.datetime.strptime(end_date_str, format)
+        except ValueError, error:
+            print error
+            return result
 
         if begin_date > end_date:
-            raise osv.except_osv('Error', 'The begin must be inferior the end date.')
+            return result
 
-        return {'value' : {
-            'duration' : self._calculate_duration(self, cursor,
-                            user_id, ids, None, None, begin_date, end_date)
-        }}
+        result['value']['duration'] = self._calculate_duration(self, cursor,
+            user_id, ids, None, None, begin_date, end_date)
+        result['value']['begin_date'] = begin_date
+        result['value']['end_date'] = end_date
+
+        return result
         
     def _calculate_duration(self, cursor, user_id, ids, field_name, arg, context=None,
                             begin_date=None, end_date=None):
@@ -72,7 +79,7 @@ class Rent(osv.osv):
         """
 
         def _calc(begin, end):
-            return str(end - begin)
+            return '~' + str(end - begin).split(',')[0]
 
         if begin_date or end_date:
             return _calc(begin_date, end_date)
@@ -90,17 +97,17 @@ class Rent(osv.osv):
     ]
     
     _columns = {
-        'begin_date' : fields.datetime('Rent start', required=True),
-        'end_date' : fields.datetime('End of rental', required=True),
+        'begin_date' : fields.datetime(_('Rent start'), required=True),
+        'end_date' : fields.datetime(_('End of rental'), required=True),
         'product_ids' : fields.many2many('product.product', 'rent_products_relation', 'rent_id', 'product_id',
-                                         'Products', domain=[('rental', '=', 'True')], required=True),
-        'partner_id' : fields.many2one('res.partner', 'Client', ondelete='restrict', required=True,
-                                       domain=[('customer', '=', True)]),
+                                         _('Products'), domain=[('rental', '=', 'True')], required=True),
+        'partner_id' : fields.many2one('res.partner', _('Client'), ondelete='restrict', required=True,
+                                       context={'search_default_customer' : 1}),
         'duration' : fields.function(_calculate_duration, type="char", method=True, string="Duration", size=150),
     }
     
     _defaults = {
-        'duration' : 'Please select the begin/end date.',
+        'duration' : _('Please select the begin/end date.'),
     }
 
 Rent()
