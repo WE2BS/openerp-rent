@@ -18,3 +18,4 @@
 #
 
 import rent
+import product

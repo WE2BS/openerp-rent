@@ -17,20 +17,25 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-{
-    "name" : "Rent",
-    "version" : "0.1",
-    "author" : "Thibaut DIRLIK (WE2BS)",
-    "category" : "Generic Modules/Sales & Purchases",
-    "website" : "http://www.openerp.com",
-    "description": """
-        This module manages the leasing of products to partners.
-    """,
-    "depends" : ["base", "product"],
-    "init_xml" : [],
-    "demo_xml" : [],
-    "update_xml" : ['views/menus.xml', 'views/product_view.xml'],
-    "active": False,
-    "test":[],
-    "installable": True
-}
+from osv import osv, fields
+
+class Product(osv.osv):
+
+    """
+    Extends the basic product.product model :
+        - Add a 'can_be_rent' field.
+        - Add a 'renters_ids' field : A list of partners that are currently renting the product.
+    """
+
+    _name = 'product.product'
+    _inherit = 'product.product'
+
+    _columns = {
+        'can_be_rent' : fields.boolean('Can be rented', help="Enable this if you want to rent this product.")
+    }
+
+    _defaults = {
+        'can_be_rent' : False,
+    }
+
+Product()
