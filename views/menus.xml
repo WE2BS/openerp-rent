@@ -2,10 +2,10 @@
 <openerp>
     <data>
         <!--
-            This action will be used to create a new rent.
+            This action will be used to register a new rent.
         -->
         <record id="rent_action_create" model="ir.actions.act_window">
-            <field name="name">rent.action.create</field>
+            <field name="name">Register a new rent</field>
             <field name="res_model">rent.rent</field>
             <field name="view_type">form</field>
             <field name="view_mode">form</field>
@@ -18,7 +18,6 @@
                  `- View current leases.
         -->
         <menuitem id="rent_menu" name="Rent" />
-        <menuitem id="rent_menu_create" action="rent_action_create"
-                  name="Registrer a new rent" parent="rent_menu"/>
+        <menuitem id="rent_menu_create" action="rent_action_create" parent="rent_menu"/>
     </data>
 </openerp>
