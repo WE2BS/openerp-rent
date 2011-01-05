@@ -19,7 +19,7 @@
                 </field>
                 <page string="Packaging" position="after">
                     <page string="Rent">
-                        <field name="can_be_rent"/>
+                        
                     </page>
                 </page>
             </field>
