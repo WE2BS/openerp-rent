@@ -21,6 +21,8 @@ import datetime
 
 from osv import osv, fields
 from tools.translate import _
+from dateutil.relativedelta import *
+
 
 class Rent(osv.osv):
 
@@ -46,30 +48,28 @@ class Rent(osv.osv):
 
         print begin_date_str, end_date_str
 
-#        format = "%Y-%d-%m %H:%M:%S"
-#        result = {'value' : {}}
-#
-#        if not (begin_date_str and end_date_str):
-#            return result
-#
-#        # FIXME: The format seems to be always the same from my tests.
-#        # Nothing prove that it's the case, if somebody has any clue.
-#        try:
-#            begin_date = datetime.datetime.strptime(begin_date_str, format)
-#            end_date = datetime.datetime.strptime(end_date_str, format)
-#        except ValueError, error:
-#            print error
-#            return result
-#
-#        if begin_date > end_date:
-#            return result
-#
-#        result['value']['duration'] = self._calculate_duration(self, cursor,
-#            user_id, ids, None, None, begin_date, end_date)
-#        result['value']['begin_date'] = begin_date
-#        result['value']['end_date'] = end_date
-#
-#        return result
+        format = "%Y-%m-%d %H:%M:%S"
+        result = {'value' : {}}
+
+        if not (begin_date_str and end_date_str):
+            return result
+
+        # FIXME: The format seems to be always the same from my tests.
+        # Nothing prove that it's the case, if somebody has any clue.
+        try:
+            begin_date = datetime.datetime.strptime(begin_date_str, format)
+            end_date = datetime.datetime.strptime(end_date_str, format)
+        except ValueError, error:
+            print error
+            return result
+
+        if begin_date > end_date:
+            return result
+
+        result['value']['duration'] = self._calculate_duration(self, cursor,
+            user_id, ids, None, None, begin_date, end_date)
+
+        return result
         
     def _calculate_duration(self, cursor, user_id, ids, field_name, arg, context=None,
                             begin_date=None, end_date=None):
@@ -79,7 +79,20 @@ class Rent(osv.osv):
         """
 
         def _calc(begin, end):
-            return '~' + str(end - begin).split(',')[0]
+
+            # The relativedelta function is part of the module dateutil
+            # that is used by OpenERP (http://niemeyer.net/python-dateutil)
+
+            duration = relativedelta(end, begin)
+            output = []
+
+            for duration_type in (_('years'), _('months'), _('days'), _('hours'), _('minutes')):
+                count = getattr(duration, duration_type)
+                # TODO: Some languages don't use 's' as plural.
+                if count:
+                    output.append('%d %s' % (count, duration_type if count > 1 else duration_type[:-1]))
+
+            return ' '.join(output)
 
         if begin_date or end_date:
             return _calc(begin_date, end_date)
