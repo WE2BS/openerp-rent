@@ -4,7 +4,7 @@
         <!--
         The products form view is redefined:
             - Added a 'Rent' notebook's page
-            - Added a 'Can be rent' checkbox in the Characteristics
+            - Added a 'Can be rented' checkbox in the Characteristics
             - Added a list of renters in the rent page 
         -->
         <record id="rent_product_normal_form_view" model="ir.ui.view">

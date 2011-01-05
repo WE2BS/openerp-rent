@@ -46,30 +46,30 @@ class Rent(osv.osv):
 
         print begin_date_str, end_date_str
 
-        format = "%Y-%d-%m %H:%M:%S"
-        result = {'value' : {}}
-
-        if not (begin_date_str and end_date_str):
-            return result
-
-        # FIXME: The format seems to be always the same from my tests.
-        # Nothing prove that it's the case, if somebody has any clue.
-        try:
-            begin_date = datetime.datetime.strptime(begin_date_str, format)
-            end_date = datetime.datetime.strptime(end_date_str, format)
-        except ValueError, error:
-            print error
-            return result
-
-        if begin_date > end_date:
-            return result
-
-        result['value']['duration'] = self._calculate_duration(self, cursor,
-            user_id, ids, None, None, begin_date, end_date)
-        result['value']['begin_date'] = begin_date
-        result['value']['end_date'] = end_date
-
-        return result
+#        format = "%Y-%d-%m %H:%M:%S"
+#        result = {'value' : {}}
+#
+#        if not (begin_date_str and end_date_str):
+#            return result
+#
+#        # FIXME: The format seems to be always the same from my tests.
+#        # Nothing prove that it's the case, if somebody has any clue.
+#        try:
+#            begin_date = datetime.datetime.strptime(begin_date_str, format)
+#            end_date = datetime.datetime.strptime(end_date_str, format)
+#        except ValueError, error:
+#            print error
+#            return result
+#
+#        if begin_date > end_date:
+#            return result
+#
+#        result['value']['duration'] = self._calculate_duration(self, cursor,
+#            user_id, ids, None, None, begin_date, end_date)
+#        result['value']['begin_date'] = begin_date
+#        result['value']['end_date'] = end_date
+#
+#        return result
         
     def _calculate_duration(self, cursor, user_id, ids, field_name, arg, context=None,
                             begin_date=None, end_date=None):

@@ -6,7 +6,7 @@
         -->
         <record id="rent_form_view" model="ir.ui.view">
             <field name="name">rent.form.view</field>
-            <field name="res_model">rent.rent</field>
+            <field name="model">rent.rent</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
                 <form>
