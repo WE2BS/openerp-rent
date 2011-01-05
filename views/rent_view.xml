@@ -18,8 +18,24 @@
                         <field name="duration" />
                     </group>
                     <field name="partner_id" colspan="2"/>
-                    <field name="product_ids" colspan="4" nolabel="1"/>
+                    <field name="product_id" colspan="4" nolabel="1"/>
                 </form>
+            </field>
+        </record>
+
+        <!--
+            Rent list view
+        -->
+        <record id="rent_list_view" model="ir.ui.view">
+            <field name="name">rent.list.view</field>
+            <field name="model">rent.rent</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="partner_id"/>
+                    <field name="product_id"/>
+                    <field name="duration"/>
+                </tree>
             </field>
         </record>
     </data>

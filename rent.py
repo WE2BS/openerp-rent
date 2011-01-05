@@ -23,6 +23,7 @@ from osv import osv, fields
 from tools.translate import _
 from dateutil.relativedelta import *
 
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class Rent(osv.osv):
 
@@ -46,9 +47,6 @@ class Rent(osv.osv):
         field if both dates are correctly filled.
         """
 
-        print begin_date_str, end_date_str
-
-        format = "%Y-%m-%d %H:%M:%S"
         result = {'value' : {}}
 
         if not (begin_date_str and end_date_str):
@@ -57,8 +55,8 @@ class Rent(osv.osv):
         # FIXME: The format seems to be always the same from my tests.
         # Nothing prove that it's the case, if somebody has any clue.
         try:
-            begin_date = datetime.datetime.strptime(begin_date_str, format)
-            end_date = datetime.datetime.strptime(end_date_str, format)
+            begin_date = datetime.datetime.strptime(begin_date_str, DATE_FORMAT)
+            end_date = datetime.datetime.strptime(end_date_str, DATE_FORMAT)
         except ValueError, error:
             print error
             return result
@@ -95,30 +93,32 @@ class Rent(osv.osv):
             return ' '.join(output)
 
         if begin_date or end_date:
+            # In this case, the function has been called from on_date_changed method.
             return _calc(begin_date, end_date)
         else:
-            # The function is not called from a on_change event, we
-            # have to get the begin and end date from the DB.
-            pass
+
+            rents = self.browse(cursor, user_id, ids, context=context)
+            result = {}
+
+            for rent in rents:
+                begin_date = datetime.datetime.strptime(rent.begin_date, DATE_FORMAT)
+                end_date = datetime.datetime.strptime(rent.end_date, DATE_FORMAT)
+                result[rent.id] = _calc(begin_date, end_date)
+
+            return result
 
         return 'None'
 
     _name = 'rent.rent'
-
-    _sql_constraints = [
-        ('rent_date_order', 'CHECK(begin_date < end_date)', 'Begin date must be before the end date.'),
-    ]
-    
+    _sql_constraints = [('rent_date_order', 'CHECK(begin_date < end_date)', 'Begin date must be before the end date.'),]
     _columns = {
         'begin_date' : fields.datetime(_('Rent start'), required=True),
         'end_date' : fields.datetime(_('End of rental'), required=True),
-        'product_ids' : fields.many2many('product.product', 'rent_products_relation', 'rent_id', 'product_id',
-                                         _('Products'), domain=[('rental', '=', 'True')], required=True),
+        'product_id' : fields.many2one('product.product', _('Product'), required=True),
         'partner_id' : fields.many2one('res.partner', _('Client'), ondelete='restrict', required=True,
                                        context={'search_default_customer' : 1}),
         'duration' : fields.function(_calculate_duration, type="char", method=True, string="Duration", size=150),
     }
-    
     _defaults = {
         'duration' : _('Please select the begin/end date.'),
     }
