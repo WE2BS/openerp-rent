@@ -47,28 +47,40 @@ class Rent(osv.osv):
         field if both dates are correctly filled.
         """
 
-        result = {'value' : {}}
+        result = {
+            'value' : { 'duration' : self.default_get(cursor, user_id, ['duration'])['duration'] }
+        }
 
         if not (begin_date_str and end_date_str):
             return result
 
-        # FIXME: The format seems to be always the same from my tests.
-        # Nothing prove that it's the case, if somebody has any clue.
-        try:
-            begin_date = datetime.datetime.strptime(begin_date_str, DATE_FORMAT)
-            end_date = datetime.datetime.strptime(end_date_str, DATE_FORMAT)
-        except ValueError, error:
-            print error
+        begin_date, end_date = self._convert_datetimes(begin_date_str, end_date_str)
+
+        if not begin_date or not end_date:
             return result
 
         if begin_date > end_date:
+            result['value']['duration'] = _('The end date is before the begin date !')
             return result
 
         result['value']['duration'] = self._calculate_duration(self, cursor,
             user_id, ids, None, None, begin_date, end_date)
 
         return result
-        
+
+    def _convert_datetimes(self, *args):
+
+        """
+        This method yields a datetime object for each date passed as a string.
+        If the string could be converted, yields None.
+        """
+
+        for datetime_str in args:
+            try:
+                yield datetime.datetime.strptime(datetime_str, DATE_FORMAT)
+            except ValueError:
+                yield None
+
     def _calculate_duration(self, cursor, user_id, ids, field_name, arg, context=None,
                             begin_date=None, end_date=None):
 
@@ -101,13 +113,15 @@ class Rent(osv.osv):
             result = {}
 
             for rent in rents:
-                begin_date = datetime.datetime.strptime(rent.begin_date, DATE_FORMAT)
-                end_date = datetime.datetime.strptime(rent.end_date, DATE_FORMAT)
-                result[rent.id] = _calc(begin_date, end_date)
+                begin_date, end_date = self._convert_datetimes(rent['begin_date'], rent['end_date'])
+                if begin_date and end_date:
+                    result[rent.id] = _calc(begin_date, end_date)
+                else:
+                    result[rent.id] = 'ERROR'
 
             return result
 
-        return 'None'
+        return self.default_get(cursor, user_id, ['duration'], context=context)['duration']
 
     _name = 'rent.rent'
     _sql_constraints = [('rent_date_order', 'CHECK(begin_date < end_date)', 'Begin date must be before the end date.'),]

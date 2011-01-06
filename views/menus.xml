@@ -17,7 +17,7 @@
                  `- Register a new rent
                  `- View current leases.
         -->
-        <menuitem id="rent_menu" name="Rent" />
+        <menuitem id="rent_menu" name="Rent" icon="STOCK_REFRESH" />
         <menuitem id="rent_menu_create" action="rent_action_create" parent="rent_menu"/>
     </data>
 </openerp>
