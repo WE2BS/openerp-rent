@@ -39,7 +39,8 @@ class Company(osv.osv):
         'rent_unity' : fields.selection(UNITIES, _('Rent minimal unity'),
             help=_("This will define the minimum rent unity. "
                    "You won't be able to rent a product for less that one of this unity. "
-                   "Products prices will also be defined for this unity."))
+                   "Products prices will also be defined for this unity."),
+            required=True)
     }
     _defaults = {
         'rent_unity' : 'month'

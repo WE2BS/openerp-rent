@@ -9,14 +9,10 @@
             <field name="model">res.company</field>
             <field name="type">form</field>
             <field name="inherit_id" ref="base.view_company_form"/>
-            <field eval="7" name="priority"/>
             <field name="arch" type="xml">
-                <notebook>
-                    <page string="Configuration" position="inside">
-                        <separator string="Rent" colspan="4"/>
+                    <field name="currency_id" position="after">
                         <field name="rent_unity" colspan ="4"/>
-                    </page>
-                </notebook>
+                    </field>
             </field>
         </record>
     </data>
