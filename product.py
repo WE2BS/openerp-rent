@@ -18,6 +18,7 @@
 #
 
 from osv import osv, fields
+from rent import DURATIONS
 
 class Product(osv.osv):
 
@@ -31,11 +32,15 @@ class Product(osv.osv):
     _inherit = 'product.product'
 
     _columns = {
-        'can_be_rent' : fields.boolean('Can be rented', help="Enable this if you want to rent this product.")
+        'can_be_rent' : fields.boolean('Can be rented', help="Enable this if you want to rent this product."),
+        'rent_base_duration' : fields.selection(DURATIONS, 'Rent base duration', required=True),
+        'rent_base_price' : fields.float('Price per duration', required=True),
     }
 
     _defaults = {
         'can_be_rent' : False,
+        'rent_base_duration' : 'hour',
+        'rent_base_price' : 0,
     }
 
 Product()

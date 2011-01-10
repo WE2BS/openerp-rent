@@ -24,6 +24,12 @@ from tools.translate import _
 from dateutil.relativedelta import *
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+DURATIONS = (
+    ('hour', _('Hour')),
+    ('day', _('Day')),
+    ('month', _('Month')),
+    ('year', _('Year')),
+)
 
 class Rent(osv.osv):
 
@@ -128,7 +134,7 @@ class Rent(osv.osv):
     _columns = {
         'begin_date' : fields.datetime(_('Rent start'), required=True),
         'end_date' : fields.datetime(_('End of rental'), required=True),
-        'product_id' : fields.many2one('product.product', _('Product'), required=True),
+        'products_ids' : fields.many2many('product.product', 'rent_products', 'product_id', 'rent_id', _('Product'), required=True),
         'partner_id' : fields.many2one('res.partner', _('Client'), ondelete='restrict', required=True,
                                        context={'search_default_customer' : 1}),
         'duration' : fields.function(_calculate_duration, type="char", method=True, string="Duration", size=150),
