@@ -137,4 +137,10 @@ class Rent(osv.osv):
         'duration' : _('Please select the begin/end date.'),
     }
 
+class RentLine(osv.osv):
+
+    """
+    This class represents a rented product. 
+    """
+
 Rent()
