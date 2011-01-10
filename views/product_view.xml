@@ -3,9 +3,8 @@
     <data>
         <!--
         The products form view is redefined:
-            - Added a 'Rent' notebook's page
-            - Added a 'Can be rented' checkbox in the Characteristics
-            - Added a list of renters in the rent page 
+            - Add a 'Can be rented' checkbox in the Characteristics
+            - Add the 'rent price' field if the product can be rented.
         -->
         <record id="rent_product_normal_form_view" model="ir.ui.view">
             <field name="name">rent.product.normal.form</field>
