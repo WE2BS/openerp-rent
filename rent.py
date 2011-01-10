@@ -55,86 +55,14 @@ class Rent(osv.osv):
     about "who rents what". Look at the rent_invoicing module for invoicing possibility.
     """
 
-    def on_date_changed(self, cursor, user_id, ids, begin_date_str, end_date_str):
-
-        """
-        This method is called when the begin or end date changed. We update the duration
-        field if both dates are correctly filled.
-        """
-
-        result = {
-            'value' : { 'duration' : self.default_get(cursor, user_id, ['duration'])['duration'] }
-        }
-
-        if not (begin_date_str and end_date_str):
-            return result
-
-        begin_date, end_date = convert_datetimes(begin_date_str, end_date_str)
-
-        if not begin_date or not end_date:
-            return result
-
-        if begin_date > end_date:
-            result['value']['duration'] = _('The end date is before the begin date !')
-            return result
-
-        result['value']['duration'] = self._calculate_duration(self, cursor,
-            user_id, ids, None, None, begin_date, end_date)
-
-        return result
-
-    def _calculate_duration(self, cursor, user_id, ids, field_name, arg, context=None,
-                            begin_date=None, end_date=None):
-
-        """
-        This method returns the computed string for the duration.
-        """
-
-        def _calc(begin, end):
-
-            # The relativedelta function is part of the module dateutil
-            # that is used by OpenERP (http://niemeyer.net/python-dateutil)
-
-            duration = relativedelta(end, begin)
-            output = []
-
-            for duration_type in (_('years'), _('months'), _('days'), _('hours')):
-                count = getattr(duration, duration_type)
-                # TODO: Some languages don't use 's' as plural.
-                if count:
-                    output.append('%d %s' % (count, duration_type if count > 1 else duration_type[:-1]))
-
-            return ' '.join(output)
-
-        if begin_date or end_date:
-            # In this case, the function has been called from on_date_changed method.
-            return _calc(begin_date, end_date)
-        else:
-
-            rents = self.browse(cursor, user_id, ids, context=context)
-            result = {}
-
-            for rent in rents:
-                begin_date, end_date = convert_datetimes(rent['begin_date'], rent['end_date'])
-                if begin_date and end_date:
-                    result[rent.id] = _calc(begin_date, end_date)
-                else:
-                    result[rent.id] = 'ERROR'
-
-            return result
-
-        return self.default_get(cursor, user_id, ['duration'], context=context)['duration']
-
     _name = 'rent.rent'
     _sql_constraints = [('rent_date_order', 'CHECK(begin_date < end_date)', 'Begin date must be before the end date.'),]
     _columns = {
-        'begin_date' : fields.datetime(_('Rent start'), required=True),
-        'end_date' : fields.datetime(_('End of rental'), required=True),
+        'date' : fields.date(_('Date')),
+        'ref' : fields.char(_('Reference')),
         'line_ids' : fields.one2many('rent.line', 'rent_id', _('Products'), required=True),
         'partner_id' : fields.many2one('res.partner', _('Client'), ondelete='restrict', required=True,
                                        context={'search_default_customer' : 1}),
-        'duration' : fields.function(_calculate_duration, type="char", method=True, string="Duration", size=150),
-        'upper_round_duration' : fields.boolean(_('Round the duration'))
     }
     _defaults = {
         'duration' : _('Please select the begin/end date.'),
@@ -164,15 +92,15 @@ class RentLine(osv.osv):
         for line in lines:
 
             pass
-                
-
+        
         return results
 
     _name ='rent.line'
     _columns = {
         'rent_id' : fields.many2one('rent.rent', 'Rent'),
         'product_id' : fields.many2one('product.product', 'Product'),
-        'quantity' : fields.integer(_('Quantity')),
+        'duration_value' : fields.integer(_('Duration')),
+        'duration_unity' : fields.selection(UNITIES, _('Duration unity')),
         'price' : fields.function(_calculate_price, type="float", method=True, string=_('Price for the duration'))
     }
     _defaults = {
