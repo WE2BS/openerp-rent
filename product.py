@@ -20,27 +20,47 @@
 from osv import osv, fields
 from rent import UNITIES
 
+def get_unity_display(name):
+    for key, value in UNITIES:
+        if key == name:
+            return value
+    return 'NONE'
+
 class Product(osv.osv):
 
     """
     Extends the basic product.product model :
         - Add a 'can_be_rent' field.
-        - Add a 'renters_ids' field : A list of partners that are currently renting the product.
+        - The price for the rent.
     """
+
+    def fields_get(self, cr, user, fields=None, context=None):
+
+        """
+        We override this method to change the rent_price label on-the-fly.
+        """
+
+        result = super(osv.osv, self).fields_get(cr, user, fields, context)
+        unity = self.pool.get(
+            'res.users').browse(cr, user, user, context=context).company_id.rent_unity
+
+        if 'rent_price' in result:
+            result['rent_price']['string'] = result['rent_price']['string'] % get_unity_display(unity)
+
+        return result
+
 
     _name = 'product.product'
     _inherit = 'product.product'
 
     _columns = {
         'can_be_rent' : fields.boolean('Can be rented', help="Enable this if you want to rent this product."),
-        'rent_base_duration' : fields.selection(UNITIES, 'Rent base duration', required=True),
-        'rent_base_price' : fields.float('Price per duration', required=True),
+        'rent_price' : fields.float('Rent price (per %s)'),
     }
 
     _defaults = {
         'can_be_rent' : False,
-        'rent_base_duration' : 'hour',
-        'rent_base_price' : 0.0,
+        'rent_price' : 0.0,
     }
 
 Product()

@@ -17,11 +17,10 @@
                 <field name="purchase_ok" position="after">
                     <field name="can_be_rent"/>
                 </field>
-                <page string="Packaging" position="after">
-                    <page string="Rent">
-                        
-                    </page>
-                </page>
+                <field name="list_price" position="after">
+                    <field name="rent_price"
+                           attrs="{'readonly' : [('can_be_rent', '=', False)], 'required' : [('can_be_rent', '=', True)]}"/>
+                </field>
             </field>
         </record>
     </data>
