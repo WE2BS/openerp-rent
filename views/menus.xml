@@ -6,7 +6,7 @@
         -->
         <record id="rent_action_create" model="ir.actions.act_window">
             <field name="name">Register a new rent</field>
-            <field name="res_model">rent.rent</field>
+            <field name="res_model">rent.order</field>
             <field name="view_type">form</field>
             <field name="view_mode">form,tree</field>
         </record>
