@@ -19,3 +19,4 @@
 
 import rent
 import product
+import company

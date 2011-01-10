@@ -19,28 +19,30 @@
 
 from osv import osv, fields
 from rent import UNITIES
+from tools.translate import _
 
-class Product(osv.osv):
+class Company(osv.osv):
 
     """
-    Extends the basic product.product model :
-        - Add a 'can_be_rent' field.
-        - Add a 'renters_ids' field : A list of partners that are currently renting the product.
+    We override the res.company model to add a configuration field which define
+    the minimum rent time unity (Hour, Day, Month, Year).
+
+    All rent will be multiple of this unity. For example, if you set it to 'Day',
+    and you rent a product for 2 Months, it will be ~60 days.
+
+    The price defined on products is the price for 1 time unity.
     """
 
-    _name = 'product.product'
-    _inherit = 'product.product'
-
+    _inherit = 'res.company'
+    _name = 'res.company'
     _columns = {
-        'can_be_rent' : fields.boolean('Can be rented', help="Enable this if you want to rent this product."),
-        'rent_base_duration' : fields.selection(UNITIES, 'Rent base duration', required=True),
-        'rent_base_price' : fields.float('Price per duration', required=True),
+        'rent_unity' : fields.selection(UNITIES, _('Rent minimal unity'),
+            help=_("This will define the minimum rent unity. "
+                   "You won't be able to rent a product for less that one of this unity. "
+                   "Products prices will also be defined for this unity."))
     }
-
     _defaults = {
-        'can_be_rent' : False,
-        'rent_base_duration' : 'hour',
-        'rent_base_price' : 0.0,
+        'rent_unity' : 'month'
     }
 
-Product()
+Company()

@@ -18,18 +18,27 @@
 #
 
 import datetime
+import calendar
 
 from osv import osv, fields
 from tools.translate import _
 from dateutil.relativedelta import *
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-DURATIONS = (
+UNITIES = (
     ('hour', _('Hour')),
     ('day', _('Day')),
     ('month', _('Month')),
     ('year', _('Year')),
 )
+
+def convert_datetimes(*args):
+
+    """
+    This function returns a list of datetimes object for each date passed as a string.
+    """
+
+    return [datetime.datetime.strptime(arg, DATE_FORMAT) for arg in args]
 
 class Rent(osv.osv):
 
@@ -60,7 +69,7 @@ class Rent(osv.osv):
         if not (begin_date_str and end_date_str):
             return result
 
-        begin_date, end_date = self._convert_datetimes(begin_date_str, end_date_str)
+        begin_date, end_date = convert_datetimes(begin_date_str, end_date_str)
 
         if not begin_date or not end_date:
             return result
@@ -73,19 +82,6 @@ class Rent(osv.osv):
             user_id, ids, None, None, begin_date, end_date)
 
         return result
-
-    def _convert_datetimes(self, *args):
-
-        """
-        This method yields a datetime object for each date passed as a string.
-        If the string could be converted, yields None.
-        """
-
-        for datetime_str in args:
-            try:
-                yield datetime.datetime.strptime(datetime_str, DATE_FORMAT)
-            except ValueError:
-                yield None
 
     def _calculate_duration(self, cursor, user_id, ids, field_name, arg, context=None,
                             begin_date=None, end_date=None):
@@ -102,7 +98,7 @@ class Rent(osv.osv):
             duration = relativedelta(end, begin)
             output = []
 
-            for duration_type in (_('years'), _('months'), _('days'), _('hours'), _('minutes')):
+            for duration_type in (_('years'), _('months'), _('days'), _('hours')):
                 count = getattr(duration, duration_type)
                 # TODO: Some languages don't use 's' as plural.
                 if count:
@@ -119,7 +115,7 @@ class Rent(osv.osv):
             result = {}
 
             for rent in rents:
-                begin_date, end_date = self._convert_datetimes(rent['begin_date'], rent['end_date'])
+                begin_date, end_date = convert_datetimes(rent['begin_date'], rent['end_date'])
                 if begin_date and end_date:
                     result[rent.id] = _calc(begin_date, end_date)
                 else:
@@ -134,10 +130,11 @@ class Rent(osv.osv):
     _columns = {
         'begin_date' : fields.datetime(_('Rent start'), required=True),
         'end_date' : fields.datetime(_('End of rental'), required=True),
-        'products_ids' : fields.many2many('product.product', 'rent_products', 'product_id', 'rent_id', _('Product'), required=True),
+        'line_ids' : fields.one2many('rent.line', 'rent_id', _('Products'), required=True),
         'partner_id' : fields.many2one('res.partner', _('Client'), ondelete='restrict', required=True,
                                        context={'search_default_customer' : 1}),
         'duration' : fields.function(_calculate_duration, type="char", method=True, string="Duration", size=150),
+        'upper_round_duration' : fields.boolean(_('Round the duration'))
     }
     _defaults = {
         'duration' : _('Please select the begin/end date.'),
@@ -146,7 +143,40 @@ class Rent(osv.osv):
 class RentLine(osv.osv):
 
     """
-    This class represents a rented product. 
+    This class represents a rented product. The price is determined in function of the
+    duration and the specified quantity.
     """
 
-Rent()
+    def _calculate_price(self, cursor, user_id, ids, field_name, arg, context=None):
+
+        """
+        Returns the price of a prouct depending on the duration of the rent.
+        """
+
+        print context, ids
+
+        if not ids:
+            return
+
+        lines = self.browse(cursor, user_id, ids, context=context)
+        results = {}
+
+        for line in lines:
+
+            pass
+                
+
+        return results
+
+    _name ='rent.line'
+    _columns = {
+        'rent_id' : fields.many2one('rent.rent', 'Rent'),
+        'product_id' : fields.many2one('product.product', 'Product'),
+        'quantity' : fields.integer(_('Quantity')),
+        'price' : fields.function(_calculate_price, type="float", method=True, string=_('Price for the duration'))
+    }
+    _defaults = {
+        'price' : 0,
+    }
+
+Rent(), RentLine()
