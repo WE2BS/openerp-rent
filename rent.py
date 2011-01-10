@@ -58,9 +58,7 @@ class RentOrder(osv.osv):
         'partner_id' : fields.many2one('res.partner', _('Client'), ondelete='restrict', required=True,
             context={'search_default_customer' : 1}),
     }
-    _defaults = {
-        'date' : lambda *args, **kwargs: datetime.date.today(),
-    }
+    
 
 class RentLine(osv.osv):
 
