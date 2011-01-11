@@ -120,7 +120,8 @@ class RentOrderLine(osv.osv):
     _inherit = 'sale.order.line'
     _columns = {
         'rent_id' : fields.many2one('rent.order', 'Rent'),
-        'product_id' : fields.many2one('product.product', _('Product'), context="{'search_default_", required=True),
+        'product_id' : fields.many2one('product.product', _('Product'),
+            domain=[('can_be_rent', '=', True)], required=True),
         'begin_datetime' : fields.datetime(_('Begin'), required=True),
         'duration_value' : fields.integer(_('Duration'), required=True),
         'duration_unity' : fields.selection(_get_duration_unities, _('Duration unity'), required=True),

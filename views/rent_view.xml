@@ -10,22 +10,36 @@
             <field name="type">form</field>
             <field name="inherit_id" ref="sale.view_order_form"/>
             <field name="arch" type="xml">
-                        <tree string="Sales Order Lines" position="replace">
-                            <tree string="Rent Order Lines">
-                                <field name="name"/>
-                                <field name="duration_value"/>
-                                <field name="duration_unity"/>
-                                <field name="discount"/>
-                                <field name="product_uom_qty" string="Qty"/>
-                                <field name="product_uom" string="UoM"/>
-                                <field name="price_unit" string="Price per duration"/>
-                                <field name="price_subtotal" string="Total price"/>
-                            </tree>
-                        </tree>
-                        <field name="product_packaging" position="before">
-                            <field name="duration_value" colspan="2"/>
-                            <field name="duration_unity" colspan="2"/>
-                        </field>
+                <tree string="Sales Order Lines" position="replace">
+                    <tree string="Rent Order Lines">
+                        <field name="name"/>
+                        <field name="begin_datetime" string="Begin the"/>
+                        <field name="duration_value"/>
+                        <field name="duration_unity"/>
+                        <field name="discount"/>
+                        <field name="product_uom_qty" string="Qty"/>
+                        <field name="product_uom" string="UoM"/>
+                        <field name="price_unit" string="Price per duration"/>
+                        <field name="price_subtotal" string="Total price"/>
+                    </tree>
+                </tree>
+                <field name="product_packaging" position="before">
+                    <field name="duration_value" colspan="2"/>
+                    <field name="duration_unity" colspan="2"/>
+                    <field name="begin_datetime" colspan="2"/>
+                </field>
+                <field name="product_id" position="attributes">
+                    <attribute name="context">
+                        {
+                            'partner_id' : parent.partner_id,
+                            'quantity'  :product_uom_qty,
+                            'pricelist' : parent.pricelist_id,
+                            'shop' : parent.shop_id,
+                            'uom' : product_uom,
+                            'search_default_rent' : 1
+                        }
+                    </attribute>
+                </field>
             </field>
         </record>
 

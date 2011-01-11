@@ -35,7 +35,7 @@
                 <filter string="To Purchase" icon="terp-accessories-archiver+"
                         domain="[('purchase_ok', '=', 1)]" position="after">
                     <filter string="To Rent" icon="terp-accessories-archiver+"
-                        domain="[('can_be_rent', '=', 1)]"/>
+                        name="rent" domain="[('can_be_rent', '=', 1)]"/>
                 </filter>
             </field>
         </record>
