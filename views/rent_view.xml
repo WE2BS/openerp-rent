@@ -10,21 +10,22 @@
             <field name="type">form</field>
             <field name="inherit_id" ref="sale.view_order_form"/>
             <field name="arch" type="xml">
-                <field colspan="4" mode="tree,form,graph" name="order_line"
-                       nolabel="1" widget="one2many_list" position="replace">
-                    <field colspan="4" name="order_line" nolabel="1" mode="tree,form">
-                        <tree string="Rent Order Lines">
-                            <field name="name"/>
-                            <field name="duration_value"/>
-                            <field name="duration_unity"/>
-                            <field name="discount"/>
-                            <field name="product_uom_qty" string="Qty"/>
-                            <field name="product_uom" string="UoM"/>
-                            <field name="price_unit"/>
-                            <field name="price_subtotal"/>
+                        <tree string="Sales Order Lines" position="replace">
+                            <tree string="Rent Order Lines">
+                                <field name="name"/>
+                                <field name="duration_value"/>
+                                <field name="duration_unity"/>
+                                <field name="discount"/>
+                                <field name="product_uom_qty" string="Qty"/>
+                                <field name="product_uom" string="UoM"/>
+                                <field name="price_unit" string="Price per duration"/>
+                                <field name="price_subtotal" string="Total price"/>
+                            </tree>
                         </tree>
-                    </field>
-                </field>
+                        <field name="product_packaging" position="before">
+                            <field name="duration_value" colspan="2"/>
+                            <field name="duration_unity" colspan="2"/>
+                        </field>
             </field>
         </record>
 
