@@ -41,7 +41,7 @@ def convert_datetimes(*args):
 class RentOrder(osv.osv):
 
     """
-    Represents the a rent order:
+    Represents a rent order:
      - The date of the order (required, default today)
      - A reference for this order
      - The partner (client) products are rented to.
@@ -50,26 +50,12 @@ class RentOrder(osv.osv):
     """
 
     _name = 'rent.order'
+    _inherit = 'sale.order'
     _columns = {
-        'date' : fields.date(_('Date'), required=True),
-        'ref' : fields.char(_('Reference'), size=200),
-        'line_ids' : fields.one2many('rent.order.line', 'rent_id', _('Products'), required=True),
-        'partner_id' : fields.many2one('res.partner', _('Client'), ondelete='restrict', required=True,
-            context={'search_default_customer' : 1}),
-        'state': fields.selection([
-            ('draft', 'Quotation'),
-            ('confirmed', 'Confirmed'),
-            ('waiting_payment', 'Waiting for payment'),
-            ('paid', 'Paid'),
-            ('done', 'Done'),
-            ('cancel', 'Cancelled')
-            ], 'Rent order state', readonly=True, help="The state of this rent order."),
-    }
-    _defaults = {
-        'state' : 'draft'
+        'order_line': fields.one2many('rent.order.line', 'rent_id', 'Rent Order Lines',
+            readonly=True, states={'draft': [('readonly', False)]}),
     }
     
-
 class RentOrderLine(osv.osv):
 
     """
@@ -122,17 +108,24 @@ class RentOrderLine(osv.osv):
 
         return result
 
+    def _get_unit_price(self, cursor, user_id, ids, field_name, arg, context=None):
+
+        return {}
+
+    def _get_line_price(self, cursor, user_id, ids, field_name, arg, context=None):
+
+        return {}
+
     _name ='rent.order.line'
+    _inherit = 'sale.order.line'
     _columns = {
         'rent_id' : fields.many2one('rent.order', 'Rent'),
-        'product_id' : fields.many2one('product.product', 'Product'),
-        'begin_datetime' : fields.datetime(_('Begin')),
-        'duration_value' : fields.integer(_('Duration')),
-        'duration_unity' : fields.selection(_get_duration_unities, _('Duration unity')),
-        'price' : fields.function(_calculate_price, type="float", method=True, string=_('Price for the duration'))
-    }
-    _defaults = {
-        'price' : 0,
+        'product_id' : fields.many2one('product.product', _('Product'), context="{'search_default_", required=True),
+        'begin_datetime' : fields.datetime(_('Begin'), required=True),
+        'duration_value' : fields.integer(_('Duration'), required=True),
+        'duration_unity' : fields.selection(_get_duration_unities, _('Duration unity'), required=True),
+        'price_unit' : fields.function(_get_unit_price, type="float", string=_('Unit price')),
+        'price_subtotal' : fields.function(_get_line_price, type="float", string=_('Subtotal')),
     }
 
 RentOrder(), RentOrderLine()

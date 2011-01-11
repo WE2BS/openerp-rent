@@ -9,6 +9,7 @@
             <field name="res_model">rent.order</field>
             <field name="view_type">form</field>
             <field name="view_mode">form</field>
+            <field name="view_id" ref="rent_form_view"/>
         </record>
 
         <!--

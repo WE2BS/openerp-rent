@@ -5,18 +5,26 @@
             Rent form view
         -->
         <record id="rent_form_view" model="ir.ui.view">
-            <field name="name">rent.form.view</field>
+            <field name="name">rent.order.form.view</field>
             <field name="model">rent.order</field>
             <field name="type">form</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
             <field name="arch" type="xml">
-                <form>
-                    <separator string="Rent order" colspan="4"/>
-                    <field name="date" colspan="2"/>
-                    <field name="partner_id" colspan="2"/>
-                    <field name="ref" colspan="4"/>
-                    <field name="line_ids" colspan="4" nolabel="1" editable="top"/>
-                    <field name="state"/>
-                </form>
+                <field colspan="4" mode="tree,form,graph" name="order_line"
+                       nolabel="1" widget="one2many_list" position="replace">
+                    <field colspan="4" name="order_line" nolabel="1" mode="tree,form">
+                        <tree string="Rent Order Lines">
+                            <field name="name"/>
+                            <field name="duration_value"/>
+                            <field name="duration_unity"/>
+                            <field name="discount"/>
+                            <field name="product_uom_qty" string="Qty"/>
+                            <field name="product_uom" string="UoM"/>
+                            <field name="price_unit"/>
+                            <field name="price_subtotal"/>
+                        </tree>
+                    </field>
+                </field>
             </field>
         </record>
 
@@ -24,7 +32,7 @@
             Rent list view
         -->
         <record id="rent_list_view" model="ir.ui.view">
-            <field name="name">rent.list.view</field>
+            <field name="name">rent.order.list.view</field>
             <field name="model">rent.order</field>
             <field name="type">tree</field>
             <field name="arch" type="xml">
@@ -32,23 +40,6 @@
                     <field name="ref"/>
                     <field name="date"/>
                     <field name="partner_id"/>
-                </tree>
-            </field>
-        </record>
-
-        <!--
-            Rent order line list view
-        -->
-        <record id="rent_order_line_list_view" model="ir.ui.view">
-            <field name="name">rent.list.view</field>
-            <field name="model">rent.order.line</field>
-            <field name="type">tree</field>
-            <field name="arch" type="xml">
-                <tree>
-                    <field name="product_id"/>
-                    <field name="duration_value"/>
-                    <field name="duration_unity"/>
-                    <field name="price"/>
                 </tree>
             </field>
         </record>

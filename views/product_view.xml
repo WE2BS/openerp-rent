@@ -22,5 +22,22 @@
                 </field>
             </field>
         </record>
+
+        <!--
+            We also update the product search view to add a "To Rent" filter.
+        -->
+        <record id="rent_product_search_form_view" model="ir.ui.view">
+            <field name="name">product.search.form</field>
+            <field name="model">product.product</field>
+            <field name="inherit_id" ref="product.product_search_form_view"/>
+            <field name="type">search</field>
+            <field name="arch" type="xml">
+                <filter string="To Purchase" icon="terp-accessories-archiver+"
+                        domain="[('purchase_ok', '=', 1)]" position="after">
+                    <filter string="To Rent" icon="terp-accessories-archiver+"
+                        domain="[('can_be_rent', '=', 1)]"/>
+                </filter>
+            </field>
+        </record>
     </data>
 </openerp>
