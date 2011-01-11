@@ -52,7 +52,7 @@ class RentOrder(osv.osv):
     _name = 'rent.order'
     _inherit = 'sale.order'
     _columns = {
-        'order_line': fields.one2many('rent.order.line', 'rent_id', 'Rent Order Lines',
+        'order_line': fields.one2many('rent.order.line', 'order_id', 'Rent Order Lines',
             readonly=True, states={'draft': [('readonly', False)]}),
     }
     
@@ -119,7 +119,7 @@ class RentOrderLine(osv.osv):
     _name ='rent.order.line'
     _inherit = 'sale.order.line'
     _columns = {
-        'rent_id' : fields.many2one('rent.order', 'Rent'),
+        'order_id': fields.many2one('rent.order', 'Rent Order Reference', required=True, ondelete='cascade', select=True, readonly=True, states={'draft':[('readonly',False)]}),
         'product_id' : fields.many2one('product.product', _('Product'),
             domain=[('can_be_rent', '=', True)], required=True),
         'begin_datetime' : fields.datetime(_('Begin'), required=True),

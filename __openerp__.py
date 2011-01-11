@@ -29,8 +29,8 @@
     "depends" : ["base", "sale"],
     "init_xml" : [],
     "demo_xml" : [],
-    "update_xml" : ['views/menus.xml', 'views/rent_view.xml', 'views/product_view.xml',
-                    'views/company_view.xml'],
+    "update_xml" : ['views/rent_view.xml', 'views/product_view.xml',
+                    'views/company_view.xml', 'views/menus.xml'],
     "active": False,
     "test":[],
     "installable": True
