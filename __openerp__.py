@@ -20,9 +20,9 @@
 {
     "name" : "Rent",
     "version" : "0.1",
-    "author" : "Thibaut DIRLIK (WE2BS)",
+    "author" : "UIDE/WE2BS",
     "category" : "Generic Modules/Sales & Purchases",
-    "website" : "http://www.openerp.com",
+    "website" : "https://github.com/thibautd/openerp-rent",
     "description": """
         This module manages the leasing of products to partners.
     """,

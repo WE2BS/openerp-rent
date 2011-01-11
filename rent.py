@@ -50,17 +50,16 @@ class RentOrder(osv.osv):
     """
 
     _name = 'rent.order'
-    _sql_constraints = [('rent_date_order', 'CHECK(begin_date < end_date)', 'Begin date must be before the end date.'),]
     _columns = {
         'date' : fields.date(_('Date'), required=True),
         'ref' : fields.char(_('Reference'), size=200),
-        'line_ids' : fields.one2many('rent.line', 'rent_id', _('Products'), required=True),
+        'line_ids' : fields.one2many('rent.order.line', 'rent_id', _('Products'), required=True),
         'partner_id' : fields.many2one('res.partner', _('Client'), ondelete='restrict', required=True,
             context={'search_default_customer' : 1}),
     }
     
 
-class RentLine(osv.osv):
+class RentOrderLine(osv.osv):
 
     """
     This class represents a rented product. The price is determined in function of the
@@ -87,16 +86,42 @@ class RentLine(osv.osv):
         
         return results
 
-    _name ='rent.line'
+    def _check_date(self, cursor, user_id):
+
+        """
+        The begin date of the line can't be before the rent order date.
+        """
+
+    def _get_duration_unities(self, cursor, user_id, context=None):
+
+        """
+        Return the duration unities depending of the company configuration.
+        """
+
+        min_unity = self.pool.get('res.users').browse(
+            cursor, user_id, user_id, context=context).company_id.rent_unity
+        result = []
+        found = False
+
+        for key, name in UNITIES:
+            if key == min_unity:
+                found = True
+            if found:
+                result.append((key, name))
+
+        return result
+
+    _name ='rent.order.line'
     _columns = {
         'rent_id' : fields.many2one('rent.order', 'Rent'),
         'product_id' : fields.many2one('product.product', 'Product'),
+        'begin_datetime' : fields.datetime(_('Begin')),
         'duration_value' : fields.integer(_('Duration')),
-        'duration_unity' : fields.selection(UNITIES, _('Duration unity')),
+        'duration_unity' : fields.selection(_get_duration_unities, _('Duration unity')),
         'price' : fields.function(_calculate_price, type="float", method=True, string=_('Price for the duration'))
     }
     _defaults = {
         'price' : 0,
     }
 
-RentOrder(), RentLine()
+RentOrder(), RentOrderLine()
