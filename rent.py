@@ -56,6 +56,17 @@ class RentOrder(osv.osv):
         'line_ids' : fields.one2many('rent.order.line', 'rent_id', _('Products'), required=True),
         'partner_id' : fields.many2one('res.partner', _('Client'), ondelete='restrict', required=True,
             context={'search_default_customer' : 1}),
+        'state': fields.selection([
+            ('draft', 'Quotation'),
+            ('confirmed', 'Confirmed'),
+            ('waiting_payment', 'Waiting for payment'),
+            ('paid', 'Paid'),
+            ('done', 'Done'),
+            ('cancel', 'Cancelled')
+            ], 'Rent order state', readonly=True, help="The state of this rent order."),
+    }
+    _defaults = {
+        'state' : 'draft'
     }
     
 
