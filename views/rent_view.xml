@@ -2,6 +2,52 @@
 <openerp>
     <data>
         <!--
+            Rent order line list view
+        -->
+        <record id="rent_order_line_list_view" model="ir.ui.view">
+            <field name="name">rent.order.line.list</field>
+            <field name="model">rent.order.line</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Rent Order Lines">
+                    <field name="name"/>
+                    <field name="begin_datetime" string="Begin the" attrs="{'invisible' : [('order_id.sale_type', '!=', 'rental')]}"/>
+                    <field name="duration_value"/>
+                    <field name="duration_unity"/>
+                    <field name="discount"/>
+                    <field name="product_uom_qty" string="Qty"/>
+                    <field name="product_uom" string="UoM"/>
+                    <field name="price_unit" string="Price per duration"/>
+                    <field name="price_subtotal" string="Total price"/>
+                </tree>
+            </field>
+        </record>
+
+        <!--
+            Rent order line form view (inherited from sale.order.line)
+        -->
+        <record id="rent_order_line_form_view" model="ir.ui.view">
+            <field name="name">rent.order.line.form</field>
+            <field name="model">rent.order.line</field>
+            <field name="type">form</field>
+            <field name="inherit_id" ref="sale.view_order_line_form2"/>
+            <field name="arch" type="xml">
+                <field name="product_id" position="attributes">
+                    <attribute name="context">
+                        {
+                        'partner_id' : parent.partner_id,
+                        'quantity' :product_uom_qty,
+                        'pricelist' : parent.pricelist_id,
+                        'shop' : parent.shop_id,
+                        'uom' : product_uom,
+                        'search_default_rent' : 1
+                        }
+                    </attribute>
+                </field>
+            </field>
+        </record>
+
+        <!--
             Rent form view
         -->
         <record id="rent_sale_form_view" model="ir.ui.view">
@@ -17,56 +63,9 @@
                     <attribute name="attrs">{'invisible' : [('sale_type', '=', 'rental')]}</attribute>
                 </field>
                 <field name="order_line" position="after">
-                    <field name="rent_order_lines" colspan="4" mode="tree,form"
-                           attrs="{'invisible' : [('sale_type', '=', 'sale')]}">
-                        <tree string="Sales Order Lines" position="replace">
-                            <tree string="Rent Order Lines">
-                                <field name="name"/>
-                                <field name="begin_datetime" string="Begin the"/>
-                                <field name="duration_value"/>
-                                <field name="duration_unity"/>
-                                <field name="discount"/>
-                                <field name="product_uom_qty" string="Qty"/>
-                                <field name="product_uom" string="UoM"/>
-                                <field name="price_unit" string="Price per duration"/>
-                                <field name="price_subtotal" string="Total price"/>
-                            </tree>
-                        </tree>
-                    </field>
+                    <field name="rent_order_lines" colspan="4" mode="tree,form" nolabel="1"
+                           attrs="{'invisible' : [('sale_type', '=', 'sale')]}"/>
                 </field>
-                <field name="product_packaging" position="before">
-                            <field name="duration_value" colspan="2"/>
-                            <field name="duration_unity" colspan="2"/>
-                            <field name="begin_datetime" colspan="2"/>
-                        </field>
-                        <field name="product_id" position="attributes">
-                            <attribute name="context">
-                                {
-                                    'partner_id' : parent.partner_id,
-                                    'quantity'  :product_uom_qty,
-                                    'pricelist' : parent.pricelist_id,
-                                    'shop' : parent.shop_id,
-                                    'uom' : product_uom,
-                                    'search_default_rent' : 1
-                                }
-                            </attribute>
-                        </field>
-            </field>
-        </record>
-
-        <!--
-            Rent list view
-        -->
-        <record id="rent_list_view" model="ir.ui.view">
-            <field name="name">rent.order.list.view</field>
-            <field name="model">rent.order</field>
-            <field name="type">tree</field>
-            <field name="arch" type="xml">
-                <tree>
-                    <field name="ref"/>
-                    <field name="date"/>
-                    <field name="partner_id"/>
-                </tree>
             </field>
         </record>
     </data>
