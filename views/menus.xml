@@ -1,24 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <openerp>
     <data>
-        <!--
-            This action will be used to register a new rent.
-        -->
-        <record id="rent_action_create" model="ir.actions.act_window">
-            <field name="name">Register a new rent</field>
-            <field name="res_model">rent.order</field>
-            <field name="view_type">form</field>
-            <field name="view_mode">form</field>
-            <field name="view_id" ref="rent_form_view"/>
-        </record>
-
-        <!--
-            The menu has the following Hierarchy :
-                Rent
-                 `- Register a new rent
-                 `- View current leases.
-        -->
-        <menuitem id="rent_menu" name="Rent" icon="STOCK_REFRESH" />
-        <menuitem id="rent_menu_create" action="rent_action_create" parent="rent_menu"/>
+        
     </data>
 </openerp>

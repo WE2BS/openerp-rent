@@ -29,6 +29,10 @@ UNITIES = (
     ('month', _('Month')),
     ('year', _('Year')),
 )
+TYPES = (
+    ('sale', 'Sale'),
+    ('rental', 'Rental'),
+)
 
 def convert_datetimes(*args):
 
@@ -38,22 +42,22 @@ def convert_datetimes(*args):
 
     return [datetime.datetime.strptime(arg, DATE_FORMAT) for arg in args]
 
-class RentOrder(osv.osv):
+class SaleOrder(osv.osv):
 
     """
-    Represents a rent order:
-     - The date of the order (required, default today)
-     - A reference for this order
-     - The partner (client) products are rented to.
-
-    Only products that are marked as 'rentable' can be rented.
+    We replace the sale order to add the possibility to switch between sellign and renting.
+    The order header will be the same, only order lines will change.
     """
 
-    _name = 'rent.order'
+    _name = 'sale.order'
     _inherit = 'sale.order'
     _columns = {
-        'order_line': fields.one2many('rent.order.line', 'order_id', 'Rent Order Lines',
+        'sale_type' : fields.selection(TYPES, _('Order type'), required=True),
+        'rent_order_lines': fields.one2many('rent.order.line', 'order_id', 'Rent Order Lines',
             readonly=True, states={'draft': [('readonly', False)]}),
+    }
+    _defaults = {
+        'sale_type' : 'sale',
     }
     
 class RentOrderLine(osv.osv):
@@ -62,26 +66,6 @@ class RentOrderLine(osv.osv):
     This class represents a rented product. The price is determined in function of the
     duration and the specified quantity.
     """
-
-    def _calculate_price(self, cursor, user_id, ids, field_name, arg, context=None):
-
-        """
-        Returns the price of a product depending on the duration of the rent.
-        """
-
-        print context, ids
-
-        if not ids:
-            return
-
-        lines = self.browse(cursor, user_id, ids, context=context)
-        results = {}
-
-        for line in lines:
-
-            pass
-        
-        return results
 
     def _check_date(self, cursor, user_id):
 
@@ -110,16 +94,25 @@ class RentOrderLine(osv.osv):
 
     def _get_unit_price(self, cursor, user_id, ids, field_name, arg, context=None):
 
+        """
+        Note that the unit price in the case of a rent is not the price of the product
+        but the price for 'one' of the selected duration unity (i.e 1 Month)
+        """
+
         return {}
 
     def _get_line_price(self, cursor, user_id, ids, field_name, arg, context=None):
+
+        """
+        The line price is the unit price * the duration.
+        """
 
         return {}
 
     _name ='rent.order.line'
     _inherit = 'sale.order.line'
     _columns = {
-        'order_id': fields.many2one('rent.order', 'Rent Order Reference', required=True, ondelete='cascade', select=True, readonly=True, states={'draft':[('readonly',False)]}),
+        'order_id': fields.many2one('sale.order', 'Rent Order Reference', required=True, ondelete='cascade', select=True, readonly=True, states={'draft':[('readonly',False)]}),
         'product_id' : fields.many2one('product.product', _('Product'),
             domain=[('can_be_rent', '=', True)], required=True),
         'begin_datetime' : fields.datetime(_('Begin'), required=True),
@@ -129,4 +122,4 @@ class RentOrderLine(osv.osv):
         'price_subtotal' : fields.function(_get_line_price, type="float", string=_('Subtotal')),
     }
 
-RentOrder(), RentOrderLine()
+SaleOrder(), RentOrderLine()

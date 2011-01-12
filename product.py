@@ -24,7 +24,7 @@ def get_unity_display(name):
     for key, value in UNITIES:
         if key == name:
             return value
-    return 'NONE'
+    raise Exception('Invalid unity key.')
 
 class Product(osv.osv):
 
@@ -48,8 +48,7 @@ class Product(osv.osv):
             result['rent_price']['string'] = result['rent_price']['string'] % get_unity_display(unity)
 
         return result
-
-
+    
     _name = 'product.product'
     _inherit = 'product.product'
 
