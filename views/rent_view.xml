@@ -11,7 +11,7 @@
             <field name="arch" type="xml">
                 <tree string="Rent Order Lines">
                     <field name="name"/>
-                    <field name="begin_datetime" string="Begin the" attrs="{'invisible' : [('order_id.sale_type', '!=', 'rental')]}"/>
+                    <field name="begin_datetime"/>
                     <field name="duration_value"/>
                     <field name="duration_unity"/>
                     <field name="discount"/>
@@ -63,8 +63,8 @@
                     <attribute name="attrs">{'invisible' : [('sale_type', '=', 'rental')]}</attribute>
                 </field>
                 <field name="order_line" position="after">
-                    <field name="rent_order_lines" colspan="4" mode="tree,form" nolabel="1"
-                           attrs="{'invisible' : [('sale_type', '=', 'sale')]}"/>
+                    <field name="rent_order_lines" colspan="4" mode="tree,form" nolabel="1" context="{'form_view_ref':'rent.rent_order_line_form_view'}"
+                           attrs="{'invisible' : [('sale_type', '=', 'sale')]}" widget="one2many_list"/>
                 </field>
             </field>
         </record>
