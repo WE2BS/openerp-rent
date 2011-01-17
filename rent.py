@@ -21,7 +21,13 @@ import datetime
 
 from osv import osv, fields
 from tools.translate import _
+from tools.misc import cache
 from dateutil.relativedelta import *
+
+# We define a function to convert days to month. Some customer mays want exact
+# number of days, other could consider that there are 30 days in a month.
+def convert_days_to_month(begin_date, number_of_days):
+    return 30 * number_of_days
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -97,10 +103,14 @@ class RentOrderLine(osv.osv):
         The begin date of the line can't be before the rent order date.
         """
 
+    @cache(30)
     def _get_duration_unities(self, cursor, user_id, context=None):
 
         """
         Return the duration unities depending of the company configuration.
+        
+        Note: We cache the result because it will certainly not change a lot,
+        and it will cause a lot of useless queries on order with a lot of lines.
         """
 
         min_unity = self.pool.get('res.users').browse(
@@ -123,20 +133,20 @@ class RentOrderLine(osv.osv):
         but the price for 'one' of the selected duration unity (i.e 1 Month)
         """
 
-#        lines = self.browse(cursor, user_id, ids, context=context)
-#        base_unity = self._get_duration_unities(cursor, user_id, context=context)[0][0]
-#        prices = {}
-#
-#        for line in lines:
-#
-#            duration = line.duration_value
-#            unity = line.duration_unity
-#            factor = UNITIES_FACTORS[base_unity][unity]
-#            price = line.product_id.price * factor * duration
-#
-#            prices[line.id] = price
-#
-#        return prices
+        lines = self.browse(cursor, user_id, ids, context=context)
+        base_unity = self._get_duration_unities(cursor, user_id, context=context)[0][0]
+        prices = {}
+
+        for line in lines:
+
+            duration = line.duration_value
+            unity = line.duration_unity
+            factor = UNITIES_FACTORS[base_unity][unity]
+            price = line.product_id.rent_price * factor * duration
+
+            prices[line.id] = price
+
+        return prices
 
     def _get_line_price(self, cr, uid, ids, field_name, arg, context=None):
 
@@ -152,27 +162,32 @@ class RentOrderLine(osv.osv):
         To be the more accurate, with use the dateutil module to calculate exactly how many days there are between dates.
         """
 
-#        tax_obj = self.pool.get('account.tax')
-#        cur_obj = self.pool.get('res.currency')
-#        res = {}
-#        if context is None:
-#            context = {}
-#        for line in self.browse(cr, uid, ids, context=context):
-#            price = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
-#            taxes = tax_obj.compute_all(cr, uid, line.tax_id, price, line.product_uom_qty, line.order_id.partner_invoice_id.id, line.product_id, line.order_id.partner_id)
-#            cur = line.order_id.pricelist_id.currency_id
-#            res[line.id] = cur_obj.round(cr, uid, cur, taxes['total'])
-#        return res
-#
-#        return {}
+        tax_obj = self.pool.get('account.tax')
+        cur_obj = self.pool.get('res.currency')
+        res = {}
+
+        if context is None:
+            context = {}
+
+        for line in self.browse(cr, uid, ids, context=context):
+            price = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+            taxes = tax_obj.compute_all(cr, uid, line.tax_id, price, line.product_uom_qty, line.order_id.partner_invoice_id.id, line.product_id, line.order_id.partner_id)
+            cur = line.order_id.pricelist_id.currency_id
+            res[line.id] = cur_obj.round(cr, uid, cur, taxes['total'])
+
+        return res
 
     _name ='rent.order.line'
     _inherit = 'sale.order.line'
-
+    _defaults = {
+        'begin_datetime' : lambda *args, **kwargs: str(datetime.datetime.now()),
+        'duration_unity' : lambda self, cursor, user_id, context: self._get_duration_unities(cursor, user_id, context)[0],
+        'duration_value' : 1,
+    }
     _columns = {
-        'begin_datetime' : fields.datetime(_('Begin')),
-        'duration_value' : fields.integer(_('Duration'),),
-        'duration_unity' : fields.selection(_get_duration_unities, _('Duration unity')),
+        'begin_datetime' : fields.datetime(_('Begin'), required=True),
+        'duration_value' : fields.integer(_('Duration'), required=True),
+        'duration_unity' : fields.selection(_get_duration_unities, _('Duration unity'), required=True),
         'price_unit' : fields.function(_get_unit_price, type="float", string=_('Unit price'), method=True),
         'price_subtotal' : fields.function(_get_line_price, type="float", string=_('Subtotal'), method=True),
     }
