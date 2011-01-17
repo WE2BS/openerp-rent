@@ -123,20 +123,20 @@ class RentOrderLine(osv.osv):
         but the price for 'one' of the selected duration unity (i.e 1 Month)
         """
 
-        lines = self.browse(cursor, user_id, ids, context=context)
-        base_unity = self._get_duration_unities(cursor, user_id, context=context)[0][0]
-        prices = {}
-
-        for line in lines:
-
-            duration = line.duration_value
-            unity = line.duration_unity
-            factor = UNITIES_FACTORS[base_unity][unity]
-            price = line.product_id.price * factor * duration
-
-            prices[line.id] = price
-
-        return prices
+#        lines = self.browse(cursor, user_id, ids, context=context)
+#        base_unity = self._get_duration_unities(cursor, user_id, context=context)[0][0]
+#        prices = {}
+#
+#        for line in lines:
+#
+#            duration = line.duration_value
+#            unity = line.duration_unity
+#            factor = UNITIES_FACTORS[base_unity][unity]
+#            price = line.product_id.price * factor * duration
+#
+#            prices[line.id] = price
+#
+#        return prices
 
     def _get_line_price(self, cr, uid, ids, field_name, arg, context=None):
 
@@ -152,19 +152,19 @@ class RentOrderLine(osv.osv):
         To be the more accurate, with use the dateutil module to calculate exactly how many days there are between dates.
         """
 
-        tax_obj = self.pool.get('account.tax')
-        cur_obj = self.pool.get('res.currency')
-        res = {}
-        if context is None:
-            context = {}
-        for line in self.browse(cr, uid, ids, context=context):
-            price = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
-            taxes = tax_obj.compute_all(cr, uid, line.tax_id, price, line.product_uom_qty, line.order_id.partner_invoice_id.id, line.product_id, line.order_id.partner_id)
-            cur = line.order_id.pricelist_id.currency_id
-            res[line.id] = cur_obj.round(cr, uid, cur, taxes['total'])
-        return res
-
-        return {}
+#        tax_obj = self.pool.get('account.tax')
+#        cur_obj = self.pool.get('res.currency')
+#        res = {}
+#        if context is None:
+#            context = {}
+#        for line in self.browse(cr, uid, ids, context=context):
+#            price = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+#            taxes = tax_obj.compute_all(cr, uid, line.tax_id, price, line.product_uom_qty, line.order_id.partner_invoice_id.id, line.product_id, line.order_id.partner_id)
+#            cur = line.order_id.pricelist_id.currency_id
+#            res[line.id] = cur_obj.round(cr, uid, cur, taxes['total'])
+#        return res
+#
+#        return {}
 
     _name ='rent.order.line'
     _inherit = 'sale.order.line'
@@ -173,8 +173,8 @@ class RentOrderLine(osv.osv):
         'begin_datetime' : fields.datetime(_('Begin')),
         'duration_value' : fields.integer(_('Duration'),),
         'duration_unity' : fields.selection(_get_duration_unities, _('Duration unity')),
-        'price_unit' : fields.function(_get_unit_price, type="float", string=_('Unit price')),
-        'price_subtotal' : fields.function(_get_line_price, type="float", string=_('Subtotal')),
+        'price_unit' : fields.function(_get_unit_price, type="float", string=_('Unit price'), method=True),
+        'price_subtotal' : fields.function(_get_line_price, type="float", string=_('Subtotal'), method=True),
     }
 
 SaleOrder(), RentOrderLine()
