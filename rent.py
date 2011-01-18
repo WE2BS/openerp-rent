@@ -23,14 +23,6 @@ import decimal_precision as dp
 from osv import osv, fields
 from tools.translate import _
 from tools.misc import cache
-from dateutil.relativedelta import *
-
-# We define a function to convert days to month. Some customer mays want exact
-# number of days, other could consider that there are 30 days in a month.
-def convert_days_to_month(begin_date, number_of_days):
-    return 30 * number_of_days
-
-DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 UNITIES = (
     ('hour', _('Hour')),
@@ -65,14 +57,6 @@ TYPES = (
     ('rental', 'Rental'),
 )
 
-def convert_datetimes(*args):
-
-    """
-    This function returns a list of datetimes object for each date passed as a string.
-    """
-
-    return [datetime.datetime.strptime(arg, DATE_FORMAT) for arg in args]
-
 class SaleOrder(osv.osv):
 
     """
@@ -81,6 +65,12 @@ class SaleOrder(osv.osv):
     """
 
     def _get_order(self, cr, uid, ids, context=None):
+
+        """
+        We have to redefine this method here (previously defined in sale.order)
+        else we can't use it in 'store' attribute (see below).
+        """
+
         return super(SaleOrder, self)._get_order(cr, uid, ids, context)
 
     def _get_rent_order(self, cr, uid, ids, context=None):
