@@ -17,7 +17,7 @@
                     <field name="discount"/>
                     <field name="product_uom_qty" string="Qty"/>
                     <field name="product_uom" string="UoM"/>
-                    <field name="price_unit" string="Price per product"/>
+                    <field name="price_unit" string="Price for duration"/>
                     <field name="price_subtotal" string="Total price"/>
                 </tree>
             </field>
