@@ -81,6 +81,14 @@ class SaleOrder(osv.osv):
     """
 
     def _get_order(self, cr, uid, ids, context=None):
+        return super(SaleOrder, self)._get_order(cr, uid, ids, context)
+
+    def _get_rent_order(self, cr, uid, ids, context=None):
+
+        """
+        Overrides the default _get_order.
+        """
+
         result = {}
         for line in self.pool.get('rent.order.line').browse(cr, uid, ids, context=context):
             result[line.order_id.id] = True
@@ -89,7 +97,7 @@ class SaleOrder(osv.osv):
     def _amount_all(self, cr, uid, ids, field_name, arg, context=None):
 
         """
-        This method has been overriden from sale.order to handle rent order lines.
+        Overrides the default _amount_all. Compute taxes on the order.
         """
 
         cur_obj = self.pool.get('res.currency')
@@ -122,20 +130,23 @@ class SaleOrder(osv.osv):
             readonly=True, states={'draft': [('readonly', False)]}),
         'amount_untaxed': fields.function(_amount_all, method=True, digits_compute= dp.get_precision('Sale Price'), string='Untaxed Amount',
             store = {
-                'sale.order': (lambda self, cr, uid, ids, c={}: ids, ['rent_order_lines'], 10),
-                'rent.order.line': (_get_order, ['price_unit', 'tax_id', 'discount', 'product_uom_qty'], 10),
+                'sale.order': (lambda self, cr, uid, ids, c={}: ids, ['rent_order_lines', 'order_lines'], 10),
+                'sale.order.line': (_get_order, ['price_unit', 'tax_id', 'discount', 'product_uom_qty'], 10),
+                'rent.order.line': (_get_rent_order, ['price_unit', 'tax_id', 'discount', 'product_uom_qty'], 10),
             },
             multi='sums', help="The amount without tax."),
         'amount_tax': fields.function(_amount_all, method=True, digits_compute= dp.get_precision('Sale Price'), string='Taxes',
             store = {
-                'sale.order': (lambda self, cr, uid, ids, c={}: ids, ['rent_order_lines'], 10),
-                'rent.order.line': (_get_order, ['price_unit', 'tax_id', 'discount', 'product_uom_qty'], 10),
+                'sale.order': (lambda self, cr, uid, ids, c={}: ids, ['rent_order_lines', 'order_lines'], 10),
+                'sale.order.line': (_get_order, ['price_unit', 'tax_id', 'discount', 'product_uom_qty'], 10),
+                'rent.order.line': (_get_rent_order, ['price_unit', 'tax_id', 'discount', 'product_uom_qty'], 10),
             },
             multi='sums', help="The tax amount."),
         'amount_total': fields.function(_amount_all, method=True, digits_compute= dp.get_precision('Sale Price'), string='Total',
             store = {
-                'sale.order': (lambda self, cr, uid, ids, c={}: ids, ['rent_order_lines'], 10),
-                'rent.order.line': (_get_order, ['price_unit', 'tax_id', 'discount', 'product_uom_qty'], 10),
+                'sale.order': (lambda self, cr, uid, ids, c={}: ids, ['rent_order_lines', 'order_lines'], 10),
+                'sale.order.line': (_get_order, ['price_unit', 'tax_id', 'discount', 'product_uom_qty'], 10),
+                'rent.order.line': (_get_rent_order, ['price_unit', 'tax_id', 'discount', 'product_uom_qty'], 10),
             },
             multi='sums', help="The total amount."),
     }
