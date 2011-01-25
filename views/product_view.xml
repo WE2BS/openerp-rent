@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <!--
+        The products form view is redefined:
+            - Add a 'Can be rented' checkbox in the Characteristics
+            - Add the 'rent price' field if the product can be rented.
+        -->
+        <record id="rent_product_normal_form_view" model="ir.ui.view">
+            <field name="name">rent.product.normal.form</field>
+            <field name="model">product.product</field>
+            <field name="type">form</field>
+            <field name="inherit_id" ref="product.product_normal_form_view"/>
+            <field eval="7" name="priority"/>
+            <field name="arch" type="xml">
+                <field name="purchase_ok" position="after">
+                    <field name="can_be_rent"/>
+                </field>
+                <field name="list_price" position="after">
+                    <field name="rent_price"
+                           attrs="{'readonly' : [('can_be_rent', '=', False)], 'required' : [('can_be_rent', '=', True)]}"/>
+                </field>
+            </field>
+        </record>
+
+        <!--
+            We also update the product search view to add a "To Rent" filter.
+        -->
+        <record id="rent_product_search_form_view" model="ir.ui.view">
+            <field name="name">product.search.form</field>
+            <field name="model">product.product</field>
+            <field name="inherit_id" ref="product.product_search_form_view"/>
+            <field name="type">search</field>
+            <field name="arch" type="xml">
+                <filter string="To Purchase" icon="terp-accessories-archiver+"
+                        domain="[('purchase_ok', '=', 1)]" position="after">
+                    <filter string="To Rent" icon="terp-accessories-archiver+"
+                        name="rent" domain="[('can_be_rent', '=', 1)]"/>
+                </filter>
+            </field>
+        </record>
+    </data>
+</openerp>
