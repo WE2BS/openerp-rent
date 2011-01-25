@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record model="ir.actions.act_window" id="rent_action_form">
+            <field name="name">rent.action.form</field>
+            <field name="res_model">rent.order</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="usage">menu</field>
+        </record>
+        <menuitem id="rent_order_menu" parent="base.menu_sales" name="Rent Orders" action="rent_action_form"/>
+    </data>
+</openerp>

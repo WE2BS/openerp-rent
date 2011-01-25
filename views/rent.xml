@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <!--
+            Rent Order tree view
+        -->
+        <record model="ir.ui.view" id="rent_order_tree_view">
+            <field name="name">rent.order.tree.view</field>
+            <field name="model">rent.order</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <field name="ref"/>
+            </field>
+        </record>
+    </data>
+</openerp>
