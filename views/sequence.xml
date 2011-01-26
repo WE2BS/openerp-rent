@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="rent_order_sequence_type" model="ir.sequence.type">
+            <field name="name">Rent Order</field>
+            <field name="code">rent.order</field>
+        </record>
+        <record id="rent_order_sequence" model="ir.sequence">
+            <field name="name">Rent Order</field>
+            <field name="code">rent.order</field>
+            <field name="prefix">RENT</field>
+            <field name="padding">7</field>
+        </record>
+    </data>
+</openerp>

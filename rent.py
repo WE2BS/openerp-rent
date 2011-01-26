@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import time
+
 from osv import osv, fields
 from tools.translate import _
 from tools.misc import cache
@@ -66,8 +68,12 @@ class RentOrder(osv.osv):
             ('ongoing', 'Ongoing'), # Invoices generated, waiting for payments
             ('done', 'Done'), # All payments recieved
         ), _('State'), readonly=True, help=_('Gives the state of the rent order.')),
-        'ref' : fields.char(_('Reference'), size=128, required=True, help=_(
+        'ref' : fields.char(_('Reference'), size=128, required=True, readonly=True,
+            states={'draft': [('readonly', False)]}, help=_(
             'The reference is a unique identifier that identify this order.')),
+        'date_created' : fields.date(_('Order date'), readonly=True,
+            states={'draft': [('readonly', False)]}, help=_(
+            'Date of the creation of this order.')),
         'date_confirmed' : fields.date(_('Confirm date'), help=_(
             'Date on which the Rent Order has been confirmed.')),
         'date_begin_rent' : fields.date(_('Rent begin date'), required=True, help=_(
@@ -78,9 +84,12 @@ class RentOrder(osv.osv):
             'The duration of the lease, expressed in selected unit.')),
         'salesman' : fields.many2one('res.users', _('Salesman'), help=_(
             'The salesman, optional.')),
+        'shop_id': fields.many2one('sale.shop', 'Shop', required=True, readonly=True,
+            states={'draft': [('readonly', False)]}, help=_(
+            'The shop where this order was created.')),
         'partner_id': fields.many2one('res.partner', _('Customer'), required=True, change_default=True,
             domain=[('customer', '=', 'True')], context={'search_default_customer' : True}, help=_(
-            'Select a customer. Only partners marked as customer will be showed.')),
+            'Select a customer. Only partners marked as customer will be shown.')),
         'partner_invoice_address_id': fields.many2one('res.partner.address', _('Invoice Address'), readonly=True,
             required=True, states={'draft': [('readonly', False)]}, help=_(
             'Invoice address for current Rent Order.')),
@@ -96,6 +105,22 @@ class RentOrder(osv.osv):
         'notes': fields.text(_('Notes'), help=_(
             'Enter informations you want about this order.')),
     }
+
+    _defaults = {
+        'date_created':
+            lambda *args, **kwargs: time.strftime('%Y-%m-%d'),
+        'state':
+            'draft',
+        'salesman': # Default salesman is the curent user
+            lambda self, cursor, user_id, context: user_id,
+        'ref': # The ref sequence is defined in sequence.xml (Default: RENTXXXXXXX)
+            lambda self, cursor, user_id, context:
+                self.pool.get('ir.sequence').get(cursor, user_id, 'rent.order'),
+    }
+
+    _sql_constraints = [
+        ('ref_uniq', 'UNIQUE(ref)', _('Rent Order Reference must be unique !')),
+    ]
 
 class RentOrderLine(osv.osv):
 

@@ -9,7 +9,50 @@
             <field name="model">rent.order</field>
             <field name="type">tree</field>
             <field name="arch" type="xml">
-                <field name="ref"/>
+                <tree string="Rent Orders">
+                    <field name="ref"/>
+                    <field name="date_created"/>
+                    <field name="partner_id"/>
+                </tree>
+            </field>
+        </record>
+
+        <!--
+            Rent Order form view
+        -->
+        <record model="ir.ui.view" id="rent_order_form_view">
+            <field name="name">rent.order.form.view</field>
+            <field name="model">rent.order</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Rent Order">
+                    <field name="ref"/>
+                    <field name="date_created"/>
+                    <field name="shop_id" widget="selection"/>
+                    <field name="partner_id"/>
+                    <notebook colspan="4">
+                        <page string="Order lines">
+                            <field name="rent_line_ids" nolabel="1"/>
+                        </page>
+                    </notebook>
+                    <field name="state"/>
+                    <button name="Confirm"/>
+                </form>
+            </field>
+        </record>
+
+        <!--
+            Rent Order Line tree view.
+        -->
+        <record model="ir.ui.view" id="rent_order_line_tree_view">
+            <field name="name">rent.order.line.tree.view</field>
+            <field name="model">rent.order.line</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Rent Order Lines">
+                    <field name="name"/>
+                    <field name="product_id"/>
+                </tree>
             </field>
         </record>
     </data>
