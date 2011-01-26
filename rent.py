@@ -36,6 +36,30 @@ class RentOrder(osv.osv):
     # is really different, and there is a notion of duration. I decided to not inherit
     # sale.order because there were a lot of useless things for a Rent Order.
 
+    def on_client_changed(self, cursor, user_id, ids, client_id):
+
+        # Called when the client has changed : we update all address fields :
+        #   Order address, invoice address and shipping address.
+
+        result, default = {}, None
+        client = self.pool.get('res.partner').browse(cursor, user_id, client_id)
+
+        for address in client.address:
+            print address
+            print address.type
+            if address.type == 'default':
+                result = {
+                    'partner_order_address_id' : address.id,
+                    'partner_invoice_address_id' : address.id,
+                    'partner_shipping_address_id' : address.id,
+                }
+            elif address.type == 'invoice':
+                result['partner_invoice_address_id'] = address.id
+            elif address.type == 'delivery':
+                result['partner_shipping_address_id'] = address.id
+
+        return { 'value' : result }
+
     @cache(30)
     def _get_duration_unities(self, cursor, user_id, context=None):
 
@@ -66,7 +90,7 @@ class RentOrder(osv.osv):
             ('draft', 'Quotation'), # Default state
             ('confirmed', 'Confirmed'), # Confirmed, have to generate invoices
             ('ongoing', 'Ongoing'), # Invoices generated, waiting for payments
-            ('done', 'Done'), # All payments recieved
+            ('done', 'Done'), # All invoices have been paid
         ), _('State'), readonly=True, help=_('Gives the state of the rent order.')),
         'ref' : fields.char(_('Reference'), size=128, required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
@@ -116,6 +140,7 @@ class RentOrder(osv.osv):
         'ref': # The ref sequence is defined in sequence.xml (Default: RENTXXXXXXX)
             lambda self, cursor, user_id, context:
                 self.pool.get('ir.sequence').get(cursor, user_id, 'rent.order'),
+        'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
     }
 
     _sql_constraints = [

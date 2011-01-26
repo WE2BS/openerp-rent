@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <openerp>
     <data>
+        <!--
+            Sequence for Rent Orders: RENT000XX..
+        -->
         <record id="rent_order_sequence_type" model="ir.sequence.type">
             <field name="name">Rent Order</field>
             <field name="code">rent.order</field>
