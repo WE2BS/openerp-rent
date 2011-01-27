@@ -32,10 +32,14 @@
                     <field name="partner_id" on_change="on_client_changed(partner_id)"/>
                     <notebook colspan="4">
                         <page string="Rent Order">
-                            <field name="partner_invoice_address_id" colspan="2"/>
-                            <field name="partner_order_address_id" colspan="2"/>
-                            <field name="partner_shipping_address_id" colspan="2"/>
-                            <newline/>
+                            <field name="partner_order_address_id" groups="base.group_extended"
+                                   domain="[('partner_id', '=', partner_id)]" colspan="4"/>
+                            <field name="partner_shipping_address_id" groups="base.group_extended"
+                                   domain="[('partner_id', '=', partner_id)]" colspan="2"/>
+                            <field name="partner_invoice_address_id" groups="base.group_extended"
+                                   domain="[('partner_id', '=', partner_id)]" colspan="2"/>
+                            <field name="rent_duration"/>
+                            <field name="rent_duration_unity"/>
                             <field name="rent_line_ids" nolabel="1" colspan="4"/>
                         </page>
                     </notebook>

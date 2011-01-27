@@ -18,6 +18,7 @@
 #
 
 import time
+import logging
 
 from osv import osv, fields
 from tools.translate import _
@@ -41,12 +42,11 @@ class RentOrder(osv.osv):
         # Called when the client has changed : we update all address fields :
         #   Order address, invoice address and shipping address.
 
-        result, default = {}, None
+        result = {}
         client = self.pool.get('res.partner').browse(cursor, user_id, client_id)
 
         for address in client.address:
-            print address
-            print address.type
+            
             if address.type == 'default':
                 result = {
                     'partner_order_address_id' : address.id,
@@ -57,6 +57,10 @@ class RentOrder(osv.osv):
                 result['partner_invoice_address_id'] = address.id
             elif address.type == 'delivery':
                 result['partner_shipping_address_id'] = address.id
+
+        if not result:
+            raise osv.except_osv (
+                _('Client has not any address'), _('You must define a least one default address for this client.'))
 
         return { 'value' : result }
 
@@ -95,16 +99,18 @@ class RentOrder(osv.osv):
         'ref' : fields.char(_('Reference'), size=128, required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
             'The reference is a unique identifier that identify this order.')),
-        'date_created' : fields.date(_('Order date'), readonly=True,
+        'date_created' : fields.date(_('Date'), readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
             'Date of the creation of this order.')),
         'date_confirmed' : fields.date(_('Confirm date'), help=_(
             'Date on which the Rent Order has been confirmed.')),
         'date_begin_rent' : fields.date(_('Rent begin date'), required=True, help=_(
             'Date of the begin of the leasing.')),
-        'rent_duration_unity' : fields.selection(_get_duration_unities, _('Duration unity'), help=_(
+        'rent_duration_unity' : fields.selection(_get_duration_unities, _('Duration unity'),
+            required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'The duration unity, available choices depends of your company configuration.')),
-        'rent_duration' : fields.integer(_('Duration'), help=_(
+        'rent_duration' : fields.integer(_('Duration'),
+            required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'The duration of the lease, expressed in selected unit.')),
         'salesman' : fields.many2one('res.users', _('Salesman'), help=_(
             'The salesman, optional.')),
@@ -117,7 +123,7 @@ class RentOrder(osv.osv):
         'partner_invoice_address_id': fields.many2one('res.partner.address', _('Invoice Address'), readonly=True,
             required=True, states={'draft': [('readonly', False)]}, help=_(
             'Invoice address for current Rent Order.')),
-        'partner_order_address_id': fields.many2one('res.partner.address', _('Ordering Contact'), readonly=True,
+        'partner_order_address_id': fields.many2one('res.partner.address', _('Ordering Address'), readonly=True,
             required=True, states={'draft': [('readonly', False)]}, help=_(
             'The name and address of the contact who requested the order or quotation.')),
         'partner_shipping_address_id': fields.many2one('res.partner.address', 'Shipping Address', readonly=True,
@@ -140,11 +146,13 @@ class RentOrder(osv.osv):
         'ref': # The ref sequence is defined in sequence.xml (Default: RENTXXXXXXX)
             lambda self, cursor, user_id, context:
                 self.pool.get('ir.sequence').get(cursor, user_id, 'rent.order'),
+        'rent_duration_unity' :
+            lambda self, cursor, user_id, context: self._get_duration_unities(cursor, user_id, context)[0],
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
     }
 
     _sql_constraints = [
-        ('ref_uniq', 'UNIQUE(ref)', _('Rent Order Reference must be unique !')),
+        ('ref_uniq', 'UNIQUE(ref)', _('Rent Order reference must be unique !')),
     ]
 
 class RentOrderLine(osv.osv):
