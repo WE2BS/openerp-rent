@@ -25,7 +25,6 @@ from tools.translate import _
 from tools.misc import cache
 
 UNITIES = (
-    ('hour', _('Hour')),
     ('day', _('Day')),
     ('month', _('Month')),
     ('year', _('Year')),
@@ -60,7 +59,7 @@ class RentOrder(osv.osv):
 
         if not result:
             raise osv.except_osv (
-                _('Client has not any address'), _('You must define a least one default address for this client.'))
+                'Client has not any address', 'You must define a least one default address for this client.')
 
         return { 'value' : result }
 
@@ -99,7 +98,7 @@ class RentOrder(osv.osv):
         'ref' : fields.char(_('Reference'), size=128, required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
             'The reference is a unique identifier that identify this order.')),
-        'date_created' : fields.date(_('Date'), readonly=True,
+        'date_created' : fields.date(_('Date'), readonly=True, required=True,
             states={'draft': [('readonly', False)]}, help=_(
             'Date of the creation of this order.')),
         'date_confirmed' : fields.date(_('Confirm date'), help=_(
@@ -112,8 +111,9 @@ class RentOrder(osv.osv):
         'rent_duration' : fields.integer(_('Duration'),
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'The duration of the lease, expressed in selected unit.')),
-        'salesman' : fields.many2one('res.users', _('Salesman'), help=_(
-            'The salesman, optional.')),
+        'salesman' : fields.many2one('res.users', _('Salesman'),
+            readonly=True, states={'draft' : [('readonly', False)]}, help=_(
+            'The salesman who handle this order, optional.')),
         'shop_id': fields.many2one('sale.shop', 'Shop', required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
             'The shop where this order was created.')),
@@ -148,11 +148,16 @@ class RentOrder(osv.osv):
                 self.pool.get('ir.sequence').get(cursor, user_id, 'rent.order'),
         'rent_duration_unity' :
             lambda self, cursor, user_id, context: self._get_duration_unities(cursor, user_id, context)[0],
+        'rent_duration' : 1,
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
+
     }
 
     _sql_constraints = [
         ('ref_uniq', 'UNIQUE(ref)', _('Rent Order reference must be unique !')),
+        ('valid_created_date', 'CHECK(date_created >= CURRENT_DATE)', _('The date must be today of later.')),
+        ('valid_begin_date', 'CHECK(date_begin_rent >= CURRENT_DATE)', _('The begin date must be today or later.')),
+        ('begin_after_create', 'CHECK(date_begin_rent >= date_created)', _('The begin date must later than the order date.')),
     ]
 
 class RentOrderLine(osv.osv):
