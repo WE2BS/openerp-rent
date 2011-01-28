@@ -63,6 +63,10 @@ class RentOrder(osv.osv):
 
         return { 'value' : result }
 
+    def on_confirm_clicked(self, cursor, user_id, *args, **kwargs):
+
+        print args, kwargs
+
     @cache(30)
     def _get_duration_unities(self, cursor, user_id, context=None):
 
@@ -103,7 +107,8 @@ class RentOrder(osv.osv):
             'Date of the creation of this order.')),
         'date_confirmed' : fields.date(_('Confirm date'), help=_(
             'Date on which the Rent Order has been confirmed.')),
-        'date_begin_rent' : fields.date(_('Rent begin date'), required=True, help=_(
+        'date_begin_rent' : fields.date(_('Rent begin date'), required=True,
+            readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'Date of the begin of the leasing.')),
         'rent_duration_unity' : fields.selection(_get_duration_unities, _('Duration unity'),
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=_(
@@ -118,7 +123,8 @@ class RentOrder(osv.osv):
             states={'draft': [('readonly', False)]}, help=_(
             'The shop where this order was created.')),
         'partner_id': fields.many2one('res.partner', _('Customer'), required=True, change_default=True,
-            domain=[('customer', '=', 'True')], context={'search_default_customer' : True}, help=_(
+            domain=[('customer', '=', 'True')], context={'search_default_customer' : True},
+            readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'Select a customer. Only partners marked as customer will be shown.')),
         'partner_invoice_address_id': fields.many2one('res.partner.address', _('Invoice Address'), readonly=True,
             required=True, states={'draft': [('readonly', False)]}, help=_(
@@ -164,9 +170,9 @@ class RentOrderLine(osv.osv):
 
     _name = 'rent.order.line'
     _columns = {
-        'name' : fields.char('lol', size=32),
         'order_id' : fields.many2one('rent.order', _('Order')),
         'product_id' : fields.many2one('product.product', _('Product')),
+        'quantity' : fields.integer(_('Quantity'), required=True),
     }
     
 RentOrder(), RentOrderLine()

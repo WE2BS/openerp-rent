@@ -48,7 +48,9 @@
                         </page>
                     </notebook>
                     <field name="state"/>
-                    <button name="Confirm"/>
+                    <button name="on_confirm_clicked" string="Confirm" states="draft" />
+                    <button name="on_generate_invoices_clicked" string="Generate invoices" states="confirmed" />
+                    <button name="on_cancel_clicked" string="Cancel" states="ongoing" />
                 </form>
             </field>
         </record>
@@ -62,7 +64,6 @@
             <field name="type">tree</field>
             <field name="arch" type="xml">
                 <tree string="Rent Order Lines">
-                    <field name="name"/>
                     <field name="product_id"/>
                 </tree>
             </field>

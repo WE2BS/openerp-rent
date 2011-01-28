@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record model="workflow" id="rent_workflow">
+            <field name="name">rent.order.basic</field>
+            <field name="osv">rent.order</field>
+            <field name="on_create">True</field>
+        </record>
+
+        <!--
+            States
+        -->
+        <record id="state_draft" model="workflow.activity">
+            <field name="wkf_id" ref="rent_workflow"/>
+            <field name="flow_start">True</field>
+            <field name="name">draft</field>
+        </record>
+        <record id="state_confirmed" model="workflow.activity">
+            <field name="wkf_id" ref="rent_workflow"/>
+            <field name="name">confirmed</field>
+            <field name="kind">function</field>
+            <field name="action">write({'state' : 'confirmed'})</field>
+        </record>
+        <record id="state_ongoing" model="workflow.activity">
+            <field name="wkf_id" ref="rent_workflow"/>
+            <field name="name">ongoing</field>
+            <field name="kind">function</field>
+            <field name="action">write({'state' : 'ongoing'})</field>
+        </record>
+        <record id="state_done" model="workflow.activity">
+            <field name="wkf_id" ref="rent_workflow"/>
+            <field name="flow_stop">True</field>
+            <field name="name">done</field>
+            <field name="kind">function</field>
+            <field name="action">write({'state' : 'done'})</field>
+        </record>
+
+        <!--
+            Transitions
+        -->
+        <record id="draft_to_confirmed" model="workflow.transition">
+            <field name="act_from" ref="state_draft" />
+            <field name="act_to" ref="state_confirmed" />
+            <field name="signal">on_confirm_clicked</field>
+        </record>
+        <record id="confirmed_to_ongoing" model="workflow.transition">
+            <field name="act_from" ref="state_confirmed" />
+            <field name="act_to" ref="state_ongoing" />
+            <field name="signal">on_generate_invoices_clicked</field>
+        </record>
+    </data>
+</openerp>
