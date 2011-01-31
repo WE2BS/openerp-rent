@@ -30,6 +30,13 @@ UNITIES = (
     ('year', _('Year')),
 )
 
+STATES = (
+    ('draft', 'Quotation'), # Default state
+    ('confirmed', 'Confirmed'), # Confirmed, have to generate invoices
+    ('ongoing', 'Ongoing'), # Invoices generated, waiting for payments
+    ('done', 'Done'), # All invoices have been paid
+)
+
 class RentOrder(osv.osv):
 
     # A Rent Order is almost like a Sale Order except that the way we generate invoices
@@ -93,12 +100,7 @@ class RentOrder(osv.osv):
     _rec_name = 'ref'
 
     _columns = {
-        'state' : fields.selection((
-            ('draft', 'Quotation'), # Default state
-            ('confirmed', 'Confirmed'), # Confirmed, have to generate invoices
-            ('ongoing', 'Ongoing'), # Invoices generated, waiting for payments
-            ('done', 'Done'), # All invoices have been paid
-        ), _('State'), readonly=True, help=_('Gives the state of the rent order.')),
+        'state' : fields.selection(STATES, _('State'), readonly=True, help=_('Gives the state of the rent order.')),
         'ref' : fields.char(_('Reference'), size=128, required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
             'The reference is a unique identifier that identify this order.')),
@@ -140,10 +142,15 @@ class RentOrder(osv.osv):
             'Lines of this rent order.')),
         'notes': fields.text(_('Notes'), help=_(
             'Enter informations you want about this order.')),
+        'discount' : fields.integer(_('Global discount (%)'),
+            readonly=True, states={'draft': [('readonly', False)]}, help=_(
+            'Apply a global discount to this order.')),
     }
 
     _defaults = {
         'date_created':
+            lambda *args, **kwargs: time.strftime('%Y-%m-%d'),
+        'date_begin_rent':
             lambda *args, **kwargs: time.strftime('%Y-%m-%d'),
         'state':
             'draft',
@@ -156,6 +163,7 @@ class RentOrder(osv.osv):
             lambda self, cursor, user_id, context: self._get_duration_unities(cursor, user_id, context)[0],
         'rent_duration' : 1,
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
+        'discount' : 0,
 
     }
 
@@ -164,15 +172,44 @@ class RentOrder(osv.osv):
         ('valid_created_date', 'CHECK(date_created >= CURRENT_DATE)', _('The date must be today of later.')),
         ('valid_begin_date', 'CHECK(date_begin_rent >= CURRENT_DATE)', _('The begin date must be today or later.')),
         ('begin_after_create', 'CHECK(date_begin_rent >= date_created)', _('The begin date must later than the order date.')),
+        ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100', _('Discount must be a value between 0 and 100.')),
     ]
 
 class RentOrderLine(osv.osv):
 
+    """
+    Rent order lines define products that will be rented.
+    """
+
     _name = 'rent.order.line'
+    _rec_name = 'description'
     _columns = {
-        'order_id' : fields.many2one('rent.order', _('Order')),
-        'product_id' : fields.many2one('product.product', _('Product')),
-        'quantity' : fields.integer(_('Quantity'), required=True),
+        'description' : fields.char(_('Description'), size=180, required=True, readonly=True,
+            states={'draft': [('readonly', False)]}, help=_(
+            'This description will be used in invoices.')),
+        'order_id' : fields.many2one('rent.order', _('Order'), required=True),
+        'product_id' : fields.many2one('product.product', _('Product'), required=True, readonly=True,
+            states={'draft': [('readonly', False)]}, help=_(
+            'The product you want to rent.'),),
+        'product_id_uom' : fields.related('product_id', 'uom_id', relation='product.uom', type='many2one',
+            string=_('UoM'), readonly=True, help=_('The Unit of Measure of this product.')),
+        'quantity' : fields.integer(_('Quantity'), required=True, readonly=True,
+            states={'draft': [('readonly', False)]}, help=_(
+            'How many products to rent.')),
+        'discount' : fields.integer(_('Discount (%)'), readonly=True,
+            states={'draft': [('readonly', False)]}, help=_(
+            'If you want to apply a discount on this order line.')),
+        'state' : fields.related('order_id', 'state', type='selection', selection=STATES, readonly=True, string=_('State')),
+        'tax_ids': fields.many2many('account.tax', 'rent_order_line_tax', 'rent_order_line_id', 'tax_id',
+            _('Taxes'), readonly=True, states={'draft': [('readonly', False)]}),
     }
+
+    _defaults = {
+        'state' : STATES[0][0],
+    }
+
+    _sql_constraints = [
+        ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
+    ]
     
 RentOrder(), RentOrderLine()
