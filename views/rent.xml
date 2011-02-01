@@ -13,6 +13,8 @@
                     <field name="ref"/>
                     <field name="date_created"/>
                     <field name="partner_id"/>
+                    <field name="salesman"/>
+                    <field name="state"/>
                 </tree>
             </field>
         </record>
@@ -45,12 +47,17 @@
                                 <field name="rent_duration_unity"/>
                             </group>
                             <field name="rent_line_ids" nolabel="1" colspan="4"/>
+                            <field name="discount"/>
+                            <button name="on_compute_clicked" string="Compute" states="draft" icon="gtk-execute"/>
+                        </page>
+                        <page string="Notes">
+                            <field name="notes" colspan="4" nolabel="1"/>
                         </page>
                     </notebook>
                     <field name="state"/>
-                    <button name="on_confirm_clicked" string="Confirm" states="draft" />
+                    <button name="on_confirm_clicked" string="Confirm" states="draft" icon="gtk-ok" colspan="2"/>
                     <button name="on_generate_invoices_clicked" string="Generate invoices" states="confirmed" />
-                    <button name="on_cancel_clicked" string="Cancel" states="ongoing" />
+                    <button name="on_cancel_clicked" string="Cancel" states="confirmed,ongoing" icon="gtk-cancel"/>
                 </form>
             </field>
         </record>
@@ -65,8 +72,8 @@
             <field name="arch" type="xml">
                 <form string="Rent Order Lines">
                     <separator string="Product information"/>
-                    <field name="description" colspan="4"/>
-                    <field name="product_id"/>
+                    <field name="product_id" colspan="4" on_change="on_product_changed(product_id,description)"/>
+                    <field name="description"/>
                     <field name="product_id_uom"/>
                     <field name="quantity"/>
                     <field name="discount"/>
@@ -90,6 +97,8 @@
                     <field name="quantity"/>
                     <field name="product_id_uom"/>
                     <field name="discount"/>
+                    <field name="unit_price"/>
+                    <field name="line_price"/>
                 </tree>
             </field>
         </record>

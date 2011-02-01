@@ -30,11 +30,30 @@ UNITIES = (
     ('year', _('Year')),
 )
 
+UNITIES_FACTORS = {
+    'day' : {
+        'day' : 1.0,
+        'month' : 30.0,
+        'year' : 365.0,
+    },
+    'month' : {
+        'day' : 1.0/30,
+        'month' : 1.0,
+        'year' : 12.0,
+    },
+    'year' : {
+        'day' : 1.0/365,
+        'month' : 1.0/30,
+        'year' : 1,
+    }
+}
+
 STATES = (
     ('draft', 'Quotation'), # Default state
     ('confirmed', 'Confirmed'), # Confirmed, have to generate invoices
     ('ongoing', 'Ongoing'), # Invoices generated, waiting for payments
     ('done', 'Done'), # All invoices have been paid
+    ('cancelled', 'Cancelled'), # The order has been cancelled
 )
 
 class RentOrder(osv.osv):
@@ -75,7 +94,7 @@ class RentOrder(osv.osv):
         print args, kwargs
 
     @cache(30)
-    def _get_duration_unities(self, cursor, user_id, context=None):
+    def get_duration_unities(self, cursor, user_id, context=None):
 
         # Return the duration unities depending of the company configuration.
         #
@@ -83,7 +102,7 @@ class RentOrder(osv.osv):
         # and it will cause a lot of useless queries on orders with a lot of lines.
 
         min_unity = self.pool.get('res.users').browse(
-            cursor, user_id, user_id, context=context).company_id.rent_unity
+            cursor, user_id, user_id).company_id.rent_unity
         result = []
         found = False
 
@@ -112,7 +131,7 @@ class RentOrder(osv.osv):
         'date_begin_rent' : fields.date(_('Rent begin date'), required=True,
             readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'Date of the begin of the leasing.')),
-        'rent_duration_unity' : fields.selection(_get_duration_unities, _('Duration unity'),
+        'rent_duration_unity' : fields.selection(get_duration_unities, _('Duration unity'),
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'The duration unity, available choices depends of your company configuration.')),
         'rent_duration' : fields.integer(_('Duration'),
@@ -142,7 +161,7 @@ class RentOrder(osv.osv):
             'Lines of this rent order.')),
         'notes': fields.text(_('Notes'), help=_(
             'Enter informations you want about this order.')),
-        'discount' : fields.integer(_('Global discount (%)'),
+        'discount' : fields.float(_('Global discount (%)'),
             readonly=True, states={'draft': [('readonly', False)]}, help=_(
             'Apply a global discount to this order.')),
     }
@@ -160,10 +179,10 @@ class RentOrder(osv.osv):
             lambda self, cursor, user_id, context:
                 self.pool.get('ir.sequence').get(cursor, user_id, 'rent.order'),
         'rent_duration_unity' :
-            lambda self, cursor, user_id, context: self._get_duration_unities(cursor, user_id, context)[0],
+            lambda self, cursor, user_id, context: self.get_duration_unities(cursor, user_id, context)[0],
         'rent_duration' : 1,
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
-        'discount' : 0,
+        'discount' : 0.0,
 
     }
 
@@ -181,6 +200,62 @@ class RentOrderLine(osv.osv):
     Rent order lines define products that will be rented.
     """
 
+    def on_product_changed(self, cursor, user_id, ids, product_id, description):
+
+        """
+        This method is called when the product changed :
+            - Fill the tax_ids field with product's taxes
+            - Fill the description field with product's name
+        """
+
+        product = self.pool.get('product.product').browse(cursor, user_id, product_id)
+        result = dict()
+
+        if not product.id:
+            return result
+
+        result['description'] = product.name
+        result['tax_ids'] = [tax.id for tax in product.taxes_id]
+        result['product_id_uom'] = product.uom_id.id
+
+        return {'value' : result}
+
+    def get_prices(self, cursor, user_id, ids, fields_name, arg, context):
+
+        """
+        Returns the price for the duration for one of this product.
+        """
+
+        lines = self.browse(cursor, user_id, ids, context=context)
+        result = {}
+
+        for line in lines:
+
+            order_duration = line.order_id.rent_duration
+            order_unity = line.order_id.rent_duration_unity
+            
+            try:
+                product_price_unity = line.order_id.get_duration_unities(cursor, user_id)[0][0]
+            except KeyError:
+                raise osv.except_osv(_('Invalid duration unit'), _('It seems that there is an invalid duration unity '
+                                       'in your company configuration. Contact your system administrator.'))
+
+            product_price_factor = UNITIES_FACTORS[product_price_unity][order_unity]
+
+            # The factor is used to convert the product price unity into the order price unity.
+            # Example:
+            #   UNITIES_FACTORS['day']['year'] will return a factor to convert days to years
+            #   (365 in this case). So, to convert a price which is defined per day in price per year,
+            #   you have to multiply the price per 365.
+            unit_price = line.product_id.rent_price * product_price_factor * order_duration
+
+            result[line.id] = {
+                'unit_price' : unit_price,
+                'line_price' : unit_price * line.quantity,
+            }
+
+        return result
+
     _name = 'rent.order.line'
     _rec_name = 'description'
     _columns = {
@@ -189,23 +264,27 @@ class RentOrderLine(osv.osv):
             'This description will be used in invoices.')),
         'order_id' : fields.many2one('rent.order', _('Order'), required=True),
         'product_id' : fields.many2one('product.product', _('Product'), required=True, readonly=True,
-            states={'draft': [('readonly', False)]}, help=_(
+             context="{'search_default_rent' : True}", states={'draft': [('readonly', False)]}, help=_(
             'The product you want to rent.'),),
         'product_id_uom' : fields.related('product_id', 'uom_id', relation='product.uom', type='many2one',
             string=_('UoM'), readonly=True, help=_('The Unit of Measure of this product.')),
         'quantity' : fields.integer(_('Quantity'), required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
             'How many products to rent.')),
-        'discount' : fields.integer(_('Discount (%)'), readonly=True,
+        'discount' : fields.float(_('Discount (%)'), readonly=True, digits=(16, 2),
             states={'draft': [('readonly', False)]}, help=_(
             'If you want to apply a discount on this order line.')),
         'state' : fields.related('order_id', 'state', type='selection', selection=STATES, readonly=True, string=_('State')),
         'tax_ids': fields.many2many('account.tax', 'rent_order_line_tax', 'rent_order_line_id', 'tax_id',
             _('Taxes'), readonly=True, states={'draft': [('readonly', False)]}),
+        'unit_price' : fields.function(get_prices, method=True, multi=True, type="float", string=_("Price per duration")),
+        'line_price' : fields.function(get_prices, method=True, multi=True, type="float", string=_("Subtotal")),
     }
 
     _defaults = {
         'state' : STATES[0][0],
+        'quantity' : 1,
+        'discount' : 0.0,
     }
 
     _sql_constraints = [
