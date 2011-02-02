@@ -48,15 +48,15 @@
                             </group>
                             <field name="rent_line_ids" nolabel="1" colspan="4"/>
                             <group colspan="4" col="6">
-                                <field name="total_taxes"/>
                                 <field name="total"/>
+                                <field name="total_taxes"/>
                                 <field name="total_with_taxes"/>
-                                <field name="total_taxes_with_discount"/>
                                 <field name="total_with_discount"/>
+                                <field name="total_taxes_with_discount"/>
                                 <field name="total_with_taxes_with_discount"/>
                                 <field name="discount"/>
                                 <label string="Click on this button to refresh prices ->" colspan="2"/>
-                                <button name="on_compute_clicked" string="Compute" states="draft" icon="gtk-execute" colspan="2"/>
+                                <button name="on_compute_clicked" string="Compute" icon="gtk-execute" colspan="2"/>
                             </group>
                         </page>
                         <page string="Notes">

@@ -24,6 +24,7 @@ import math
 from osv import osv, fields
 from tools.translate import _
 from tools.misc import cache
+from decimal_precision import get_precision
 
 UNITIES = (
     ('day', _('Day')),
@@ -208,12 +209,18 @@ class RentOrder(osv.osv):
             readonly=True, states={'draft': [('readonly', False)]}, help=_(
             'Apply a global discount to this order.')),
 
-        'total' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Total")),
-        'total_with_taxes' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Total (Incl. Taxes)")),
-        'total_taxes' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Taxes")),
-        'total_with_discount' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Total (with discount)")),
-        'total_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Total taxes (with discount)")),
-        'total_with_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Total (Incl. Taxes,  with discount)")),
+        'total' : fields.function(get_totals, multi=True, method=True, type="float",
+            string=_("Untaxed amount"), digits_compute=get_precision('Sale Price')),
+        'total_with_taxes' : fields.function(get_totals, multi=True, method=True, type="float",
+            string=_("Total"), digits_compute=get_precision('Sale Price')),
+        'total_taxes' : fields.function(get_totals, multi=True, method=True, type="float",
+            string=_("Taxes"), digits_compute=get_precision('Sale Price')),
+        'total_with_discount' : fields.function(get_totals, multi=True, method=True, type="float",
+            string=_("Untaxed amount (with discount)"), digits_compute=get_precision('Sale Price')),
+        'total_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float",
+            string=_("Taxes (with discount)"), digits_compute=get_precision('Sale Price')),
+        'total_with_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float",
+            string=_("Total (with discount)"), digits_compute=get_precision('Sale Price')),
     }
 
     _defaults = {
