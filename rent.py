@@ -92,10 +92,6 @@ class RentOrder(osv.osv):
 
         return result
 
-    def on_confirm_clicked(self, cursor, user_id, *args, **kwargs):
-
-        print 'lol', args, kwargs
-
     @cache(30)
     def get_duration_unities(self, cursor, user_id, context=None):
 

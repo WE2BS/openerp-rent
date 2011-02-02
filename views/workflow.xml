@@ -34,6 +34,12 @@
             <field name="kind">function</field>
             <field name="action">write({'state' : 'done'})</field>
         </record>
+        <record id="state_cancelled" model="workflow.activity">
+            <field name="wkf_id" ref="rent_workflow"/>
+            <field name="name">cancelled</field>
+            <field name="kind">function</field>
+            <field name="action">write({'state' : 'cancelled'})</field>
+        </record>
 
         <!--
             Transitions
@@ -42,6 +48,16 @@
             <field name="act_from" ref="state_draft" />
             <field name="act_to" ref="state_confirmed" />
             <field name="signal">on_confirm_clicked</field>
+        </record>
+        <record id="draft_to_cancelled" model="workflow.transition">
+            <field name="act_from" ref="state_draft" />
+            <field name="act_to" ref="state_cancelled" />
+            <field name="signal">on_cancel_clicked</field>
+        </record>
+        <record id="cancelled_to_draft" model="workflow.transition">
+            <field name="act_from" ref="state_cancelled" />
+            <field name="act_to" ref="state_draft" />
+            <field name="signal">on_go_draft_clicked</field>
         </record>
         <record id="confirmed_to_ongoing" model="workflow.transition">
             <field name="act_from" ref="state_confirmed" />
