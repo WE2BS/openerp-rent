@@ -71,13 +71,13 @@
             <field name="type">form</field>
             <field name="arch" type="xml">
                 <form string="Rent Order Lines">
-                    <separator string="Product information"/>
+                    <separator string="Product information" colspan="4"/>
                     <field name="product_id" colspan="4" on_change="on_product_changed(product_id,description)"/>
                     <field name="description"/>
                     <field name="product_id_uom"/>
                     <field name="quantity"/>
                     <field name="discount"/>
-                    <separator string="Taxes"/>
+                    <separator string="Taxes" colspan="4"/>
                     <field name="tax_ids" colspan="4" nolabel="1"/>
                     <field name="state" colspan="4"/>
                 </form>

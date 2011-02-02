@@ -91,7 +91,7 @@ class RentOrder(osv.osv):
 
     def on_confirm_clicked(self, cursor, user_id, *args, **kwargs):
 
-        print args, kwargs
+        print 'lol', args, kwargs
 
     @cache(30)
     def get_duration_unities(self, cursor, user_id, context=None):
@@ -208,8 +208,12 @@ class RentOrderLine(osv.osv):
             - Fill the description field with product's name
         """
 
+        result = {}
+
+        if not product_id:
+            return result
+
         product = self.pool.get('product.product').browse(cursor, user_id, product_id)
-        result = dict()
 
         if not product.id:
             return result

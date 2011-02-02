@@ -34,6 +34,22 @@ class Product(osv.osv):
     #    - Add a 'can_be_rent' field.
     #    - The price for the rent.
 
+    def check_rent_price(self, cursor, user_id, ids, context=None):
+
+        """
+        We check that the rent price is neither empty or 0 if the product can be rent.
+        """
+
+        products = self.browse(cursor, user_id, ids, context=context)
+
+        for product in products:
+
+            if product.can_be_rent:
+                if not product.rent_price or product.rent_price <= 0:
+                    return False
+
+        return True
+
     def fields_get(self, cr, user, fields=None, context=None):
 
         # We override this method to change the rent_price label on-the-fly.
@@ -63,5 +79,7 @@ class Product(osv.osv):
         'can_be_rent' : False,
         'rent_price' : 0.0,
     }
+
+    _constraints = [(check_rent_price, _('The Rent price must be a positive value.'), ['rent_price']),]
 
 Product()
