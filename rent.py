@@ -86,7 +86,7 @@ class RentOrder(osv.osv):
 
         if not result:
             raise osv.except_osv (
-                'Client has not any address', 'You must define a least one default address for this client.')
+                _('Client has not any address'), _('You must define a least one default address for this client.'))
 
         return { 'value' : result }
 
