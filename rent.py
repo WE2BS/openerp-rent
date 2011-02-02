@@ -19,6 +19,7 @@
 
 import time
 import logging
+import math
 
 from osv import osv, fields
 from tools.translate import _
@@ -89,6 +90,8 @@ class RentOrder(osv.osv):
 
         return { 'value' : result }
 
+        return result
+
     def on_confirm_clicked(self, cursor, user_id, *args, **kwargs):
 
         print 'lol', args, kwargs
@@ -111,6 +114,50 @@ class RentOrder(osv.osv):
                 found = True
             if found:
                 result.append((key, name))
+
+        return result
+
+    def get_totals(self, cursor, user_id, ids, fields_name, arg, context=None):
+
+        """
+        Compute the total if the rent order, with taxes.
+        """
+
+        result = {}
+        tax_pool = self.pool.get('account.tax')
+        orders = self.browse(cursor, user_id, ids, context=context)
+
+        for order in orders:
+
+            total = 0.0
+            total_with_taxes = 0.0
+            total_taxes = 0.0
+            total_taxes_with_discount = 0.0
+
+            for line in order.rent_line_ids:
+
+                # The compute_all function is defined in the account -module  Take a look.
+                prices = tax_pool.compute_all(cursor, user_id, line.tax_ids, line.unit_price, line.quantity)
+
+                total += prices['total']
+                total_with_taxes += prices['total_included']
+                total_taxes += math.fsum([tax.get('amount', 0.0) for tax in prices['taxes']])
+                total_taxes_with_discount += math.fsum(
+                    [tax.get('amount', 0.0) * (1 - (order.discount or 0.0) / 100.0) for tax in prices['taxes']])
+
+            # We apply the global discount
+            total_with_discount = total * (1 - (order.discount or 0.0) / 100.0)
+            total_with_taxes_with_discount = total_with_discount + total_taxes_with_discount
+
+            # TODO: When implementing priceslist, we will have to use currency.round() to round these numbers
+            result[order.id] = {
+                'total' : total,
+                'total_with_taxes' : total_with_taxes,
+                'total_taxes' : total_taxes,
+                'total_taxes_with_discount' : total_taxes_with_discount,
+                'total_with_discount' : total_with_discount,
+                'total_with_taxes_with_discount' : total_with_taxes_with_discount,
+            }
 
         return result
 
@@ -164,6 +211,13 @@ class RentOrder(osv.osv):
         'discount' : fields.float(_('Global discount (%)'),
             readonly=True, states={'draft': [('readonly', False)]}, help=_(
             'Apply a global discount to this order.')),
+
+        'total' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Total")),
+        'total_with_taxes' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Total (Incl. Taxes)")),
+        'total_taxes' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Taxes")),
+        'total_with_discount' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Total (with discount)")),
+        'total_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Total taxes (with discount)")),
+        'total_with_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float", string=_("Total (Incl. Taxes,  with discount)")),
     }
 
     _defaults = {
@@ -191,7 +245,7 @@ class RentOrder(osv.osv):
         ('valid_created_date', 'CHECK(date_created >= CURRENT_DATE)', _('The date must be today of later.')),
         ('valid_begin_date', 'CHECK(date_begin_rent >= CURRENT_DATE)', _('The begin date must be today or later.')),
         ('begin_after_create', 'CHECK(date_begin_rent >= date_created)', _('The begin date must later than the order date.')),
-        ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100', _('Discount must be a value between 0 and 100.')),
+        ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
     ]
 
 class RentOrderLine(osv.osv):
