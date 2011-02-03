@@ -72,6 +72,13 @@ class RentOrder(osv.osv):
 
         """
         Register an invoice period and associate it a function.
+
+        The method must accept these arguments :
+            def get_invoices_for_monthly_period(self, cursor, user_id, order)
+        And must return a dict of dates of invoices to generate.
+
+        The order argument is the order object returned by a browse(). You can access it's data for checks.
+        If there is any problem, the function can raise an osv.except_osc exception, which will abort invoice generation.
         """
 
         if not hasattr(cls, method_name):
@@ -81,8 +88,10 @@ class RentOrder(osv.osv):
 
     def on_client_changed(self, cursor, user_id, ids, client_id):
 
-        # Called when the client has changed : we update all address fields :
-        #   Order address, invoice address and shipping address.
+        """
+        Called when the client has changed : we update all addresses fields :
+        Order address, invoice address and shipping address.
+        """
 
         result = {}
         client = self.pool.get('res.partner').browse(cursor, user_id, client_id)
@@ -154,10 +163,10 @@ class RentOrder(osv.osv):
             invoice_lines_data = rent_line_pool.get_invoice_lines_data(cursor, user_id, order_line_ids)
 
             # 2- We create invoices and their lines for each invoice period
-            period_function = self._periods[order.rent_invoice_period][2]
+            period_function = self._periods[order.rent_invoice_period][1]
             period_function = getattr(self, period_function)
 
-            invoices = period_function(self, cursor, user_id, order)
+            invoices_dates = period_function(self, cursor, user_id, order)
 
     @cache(30)
     def get_duration_unities(self, cursor, user_id, context=None):
@@ -234,8 +243,9 @@ class RentOrder(osv.osv):
 
         return [(period, self._periods[period][0]) for period in self._periods]
 
-    def get_invoices_for_once_period(self, *args, **kwargs):
-        print args, kwargs
+    def get_invoices_for_once_period(self, cursor, user_id, order):
+
+        pass
 
     _name = 'rent.order'
     _sql_constraints = []
@@ -339,12 +349,12 @@ class RentOrder(osv.osv):
         ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
     ]
 
-# We register invoice periods for Rent orders
-# Each period must have its method to generate the invoices.
+# We register invoice periods for Rent orders.
+# See the doc of register_invoice_period for more informations.
 RentOrder.register_invoice_period('once', _('One invoice'), 'get_invoices_for_once_period')
 #RentOrder.register_invoice_period('monthly', _('Monthly'))
 #RentOrder.register_invoice_period('quaterly', _('Quaterly'))
-#RentOrder.register_invoice_period('yearly', _('yearly'))
+#RentOrder.register_invoice_period('yearly', _('Yearly'))
 
 class RentOrderLine(osv.osv):
 
@@ -438,7 +448,7 @@ class RentOrderLine(osv.osv):
                 'price_unit': rent_line.unit_price,
                 'quantity': rent_line.quantity,
                 'discount': rent_line.discount,
-                'product_id': line.product_id.id or False,
+                'product_id': rent_line.product_id.id or False,
                 'invoice_line_tax_id': [(6, 0, [x.id for x in rent_line.tax_ids])],
                 'note': rent_line.notes,
             }
