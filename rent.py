@@ -67,6 +67,18 @@ class RentOrder(osv.osv):
     # is really different, and there is a notion of duration. I decided to not inherit
     # sale.order because there were a lot of useless things for a Rent Order.
 
+    @classmethod
+    def register_invoice_period(cls, name, showed_name, method_name):
+
+        """
+        Register an invoice period and associate it a function.
+        """
+
+        if not hasattr(cls, method_name):
+            raise RuntimeError('Unkown method %s in register_invoice_period().' % method_name)
+
+        cls._periods[name] = (showed_name, method_name)
+
     def on_client_changed(self, cursor, user_id, ids, client_id):
 
         # Called when the client has changed : we update all address fields :
@@ -128,6 +140,8 @@ class RentOrder(osv.osv):
         The interval is the duration unity : if you rent for 2 Month, there will be 2 invoices.
         """
 
+        print 'ok'
+
         orders = self.browse(cursor, user_id, ids)
         rent_line_pool, invoice_pool = self.pool.get('rent.order.line'), self.pool.get('account.invoice')
 
@@ -140,8 +154,11 @@ class RentOrder(osv.osv):
             invoice_lines_data = rent_line_pool.get_invoice_lines_data(cursor, user_id, order_line_ids)
 
             # 2- We create invoices and their lines for each invoice period
+            period_function = self._periods[order.rent_invoice_period][2]
+            period_function = getattr(self, period_function)
 
-        
+            invoices = period_function(self, cursor, user_id, order)
+
     @cache(30)
     def get_duration_unities(self, cursor, user_id, context=None):
 
@@ -209,9 +226,22 @@ class RentOrder(osv.osv):
 
         return result
 
+    def get_invoice_periods(self, cursor, user_id, context=None):
+
+        """
+        Returns a list of available periods (that have been registered with register_invoice_period()).
+        """
+
+        return [(period, self._periods[period][0]) for period in self._periods]
+
+    def get_invoices_for_once_period(self, *args, **kwargs):
+        print args, kwargs
+
     _name = 'rent.order'
     _sql_constraints = []
     _rec_name = 'ref'
+    _periods = {}
+    _order = 'date_created DESC,ref DESC'
 
     _columns = {
         'state' : fields.selection(STATES, _('State'), readonly=True, help=_('Gives the state of the rent order.')),
@@ -232,6 +262,9 @@ class RentOrder(osv.osv):
         'rent_duration' : fields.integer(_('Duration'),
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'The duration of the lease, expressed in selected unit.')),
+        'rent_invoice_period' : fields.selection(get_invoice_periods, _('Invoice Period'),
+            required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=_(
+            'Period between invoices')),
         'salesman' : fields.many2one('res.users', _('Salesman'),
             readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'The salesman who handle this order, optional.')),
@@ -292,6 +325,7 @@ class RentOrder(osv.osv):
         'rent_duration_unity' :
             lambda self, cursor, user_id, context: self.get_duration_unities(cursor, user_id, context)[0],
         'rent_duration' : 1,
+        'rent_invoice_period' : 'once',
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
         'discount' : 0.0,
 
@@ -304,6 +338,13 @@ class RentOrder(osv.osv):
         ('begin_after_create', 'CHECK(date_begin_rent >= date_created)', _('The begin date must later than the order date.')),
         ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
     ]
+
+# We register invoice periods for Rent orders
+# Each period must have its method to generate the invoices.
+RentOrder.register_invoice_period('once', _('One invoice'), 'get_invoices_for_once_period')
+#RentOrder.register_invoice_period('monthly', _('Monthly'))
+#RentOrder.register_invoice_period('quaterly', _('Quaterly'))
+#RentOrder.register_invoice_period('yearly', _('yearly'))
 
 class RentOrderLine(osv.osv):
 
@@ -441,5 +482,5 @@ class RentOrderLine(osv.osv):
     _sql_constraints = [
         ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
     ]
-    
+
 RentOrder(), RentOrderLine()

@@ -25,7 +25,7 @@
             <field name="wkf_id" ref="rent_workflow"/>
             <field name="name">ongoing</field>
             <field name="kind">function</field>
-            <field name="action">write({'state' : 'ongoing'})</field>
+            <field name="action">action_generate_invoices()</field>
         </record>
         <record id="state_done" model="workflow.activity">
             <field name="wkf_id" ref="rent_workflow"/>

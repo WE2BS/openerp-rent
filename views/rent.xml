@@ -41,10 +41,11 @@
                                    domain="[('partner_id', '=', partner_id)]"/>
                             <field name="partner_invoice_address_id" groups="base.group_extended"
                                    domain="[('partner_id', '=', partner_id)]"/>
-                            <group colspan="4" col="6">
+                            <group colspan="4" col="8">
                                 <field name="date_begin_rent"/>
                                 <field name="rent_duration"/>
                                 <field name="rent_duration_unity"/>
+                                <field name="rent_invoice_period"/>
                             </group>
                             <field name="rent_line_ids" nolabel="1" colspan="4"/>
                             <group colspan="4" col="6">
