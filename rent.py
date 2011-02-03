@@ -20,11 +20,14 @@
 import time
 import logging
 import math
+import netsvc
 
 from osv import osv, fields
 from tools.translate import _
 from tools.misc import cache
 from decimal_precision import get_precision
+
+_logger = logging.getLogger('rent')
 
 UNITIES = (
     ('day', _('Day')),
@@ -92,6 +95,39 @@ class RentOrder(osv.osv):
         return { 'value' : result }
 
         return result
+
+    def on_draft_clicked(self, cursor, user_id, ids, context=None):
+
+        """
+        This method is called when the rent order is in cancelled state and the user clicked on 'Go back to draft'.
+        """
+
+        orders = self.browse(cursor, user_id, ids, context=context)
+        wkf_service = netsvc.LocalService("workflow")
+
+        # Update records
+        self.write(cursor, user_id, ids, {
+            'state' : 'draft',
+        })
+
+        for order in orders:
+
+            # Delete and re-create the workflow
+            wkf_service.trg_delete(user_id, 'rent.order', order.id, cursor)
+            wkf_service.trg_create(user_id, 'rent.order', order.id, cursor)
+
+        # TODO: This loop must not be used... we already ierate over orders before, if somebody has a better solution
+        for id, name in self.name_get(cursor, user_id, ids):
+            self.log(cursor, user_id, order.id, _('The Rent Order "%s" has been reset.') % name)
+
+        return True
+
+    def action_generate_invoices(self, cursor, user_id, ids):
+
+        """
+        This action is called by the workflow activity 'ongoing'. We generate an invoice for the duration period.
+        The interval is the duration unity : if you rent 
+        """
 
     @cache(30)
     def get_duration_unities(self, cursor, user_id, context=None):
@@ -208,6 +244,8 @@ class RentOrder(osv.osv):
         'discount' : fields.float(_('Global discount (%)'),
             readonly=True, states={'draft': [('readonly', False)]}, help=_(
             'Apply a global discount to this order.')),
+        'invoice_ids': fields.many2many('account.invoice', 'rent_order_line_tax', 'rent_order_line_id', 'tax_id',
+            _('Taxes'), readonly=True, states={'draft': [('readonly', False)]}),
 
         'total' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Untaxed amount"), digits_compute=get_precision('Sale Price')),
@@ -221,6 +259,7 @@ class RentOrder(osv.osv):
             string=_("Taxes (with discount)"), digits_compute=get_precision('Sale Price')),
         'total_with_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Total (with discount)"), digits_compute=get_precision('Sale Price')),
+
     }
 
     _defaults = {
