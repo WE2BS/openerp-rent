@@ -116,7 +116,6 @@ class RentOrder(osv.osv):
             wkf_service.trg_delete(user_id, 'rent.order', order.id, cursor)
             wkf_service.trg_create(user_id, 'rent.order', order.id, cursor)
 
-        # TODO: This loop must not be used... we already ierate over orders before, if somebody has a better solution
         for id, name in self.name_get(cursor, user_id, ids):
             self.log(cursor, user_id, order.id, _('The Rent Order "%s" has been reset.') % name)
 
@@ -126,16 +125,32 @@ class RentOrder(osv.osv):
 
         """
         This action is called by the workflow activity 'ongoing'. We generate an invoice for the duration period.
-        The interval is the duration unity : if you rent 
+        The interval is the duration unity : if you rent for 2 Month, there will be 2 invoices.
         """
 
+        orders = self.browse(cursor, user_id, ids)
+        rent_line_pool, invoice_pool = self.pool.get('rent.order.line'), self.pool.get('account.invoice')
+
+        for order in orders:
+
+            order_line_ids = [line.id for line in order.rent_line_ids]
+            order_invoice_period = ''
+
+            # 1- We get the invoice lines data
+            invoice_lines_data = rent_line_pool.get_invoice_lines_data(cursor, user_id, order_line_ids)
+
+            # 2- We create invoices and their lines for each invoice period
+
+        
     @cache(30)
     def get_duration_unities(self, cursor, user_id, context=None):
 
-        # Return the duration unities depending of the company configuration.
-        #
-        # Note: We cache the result because it will certainly not change a lot,
-        # and it will cause a lot of useless queries on orders with a lot of lines.
+        """
+        Return the duration unities depending of the company configuration.
+
+        Note: We cache the result because it will certainly not change a lot,
+        and it will cause a lot of useless queries on orders with a lot of lines.
+        """
 
         min_unity = self.pool.get('res.users').browse(
             cursor, user_id, user_id).company_id.rent_unity
@@ -356,6 +371,41 @@ class RentOrderLine(osv.osv):
 
         return result
 
+    def get_invoice_lines_data(self, cursor, user_id, ids, context=None):
+
+        """
+        Returns a dictionary that contains rent.order.line ids as key, and a dictionary of data used to create the invoice lines.
+        """
+
+        rent_lines = self.browse(cursor, user_id, ids, context)
+        result = {}
+
+        for rent_line in rent_lines:
+
+            # The account that will be used is the income account of the product (or its category)
+            invoice_line_account_id = rent_line.product_id.product_tmpl_id.property_account_income.id
+            if not invoice_line_account_id:
+                invoice_line_account_id = rent_line.product_id.categ_id.property_account_income_categ.id
+            if not invoice_line_account_id:
+                raise osv.except_osv(_('Error !'), _('There is no income account defined for this product: "%s" (id:%d)')
+                    % (rent_line.product_id.name, rent_line.product_id.id,))
+            
+            invoice_line_data = {
+                'name': rent_line.description,
+                'origin': rent_line.order_id.ref,
+                'account_id': invoice_line_account_id,
+                'price_unit': rent_line.unit_price,
+                'quantity': rent_line.quantity,
+                'discount': rent_line.discount,
+                'product_id': line.product_id.id or False,
+                'invoice_line_tax_id': [(6, 0, [x.id for x in rent_line.tax_ids])],
+                'note': rent_line.notes,
+            }
+
+            result[rent_line.id] = invoice_line_data
+
+        return result
+        
     _name = 'rent.order.line'
     _rec_name = 'description'
     _columns = {
@@ -377,6 +427,7 @@ class RentOrderLine(osv.osv):
         'state' : fields.related('order_id', 'state', type='selection', selection=STATES, readonly=True, string=_('State')),
         'tax_ids': fields.many2many('account.tax', 'rent_order_line_tax', 'rent_order_line_id', 'tax_id',
             _('Taxes'), readonly=True, states={'draft': [('readonly', False)]}),
+        'notes' : fields.text(_('Notes')),
         'unit_price' : fields.function(get_prices, method=True, multi=True, type="float", string=_("Price per duration")),
         'line_price' : fields.function(get_prices, method=True, multi=True, type="float", string=_("Subtotal")),
     }
