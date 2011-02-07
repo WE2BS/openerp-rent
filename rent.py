@@ -54,11 +54,11 @@ UNITIES_FACTORS = {
 }
 
 STATES = (
-    ('draft', 'Quotation'), # Default state
-    ('confirmed', 'Confirmed'), # Confirmed, have to generate invoices
-    ('ongoing', 'Ongoing'), # Invoices generated, waiting for payments
-    ('done', 'Done'), # All invoices have been paid
-    ('cancelled', 'Cancelled'), # The order has been cancelled
+    ('draft', _('Quotation')), # Default state
+    ('confirmed', _('Confirmed')), # Confirmed, have to generate invoices
+    ('ongoing', _('Ongoing')), # Invoices generated, waiting for payments
+    ('done', _('Done')), # All invoices have been paid
+    ('cancelled', _('Cancelled')), # The order has been cancelled
 )
 
 class RentOrder(osv.osv):
@@ -333,7 +333,7 @@ class RentOrder(osv.osv):
             lambda self, cursor, user_id, context:
                 self.pool.get('ir.sequence').get(cursor, user_id, 'rent.order'),
         'rent_duration_unity' :
-            lambda self, cursor, user_id, context: self.get_duration_unities(cursor, user_id, context)[0],
+            lambda self, cursor, user_id, context: self.get_duration_unities(cursor, user_id, context)[0][0],
         'rent_duration' : 1,
         'rent_invoice_period' : 'once',
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
