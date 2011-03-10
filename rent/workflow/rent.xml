@@ -38,7 +38,7 @@
             <field name="wkf_id" ref="rent_workflow"/>
             <field name="name">cancelled</field>
             <field name="kind">function</field>
-            <field name="action">write({'state' : 'cancelled'})</field>
+            <field name="action">action_cancel()</field>
         </record>
 
         <!--
@@ -63,6 +63,11 @@
             <field name="act_from" ref="state_confirmed" />
             <field name="act_to" ref="state_ongoing" />
             <field name="signal">on_generate_invoices_clicked</field>
+        </record>
+        <record id="ongoing_to_cancel" model="workflow.transition">
+            <field name="act_from" ref="state_ongoing" />
+            <field name="act_to" ref="state_cancelled" />
+            <field name="signal">on_cancel_clicked</field>
         </record>
     </data>
 </openerp>

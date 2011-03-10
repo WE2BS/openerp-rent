@@ -149,16 +149,20 @@ class RentOrder(osv.osv):
         """
 
         order = self.browse(cursor, user_id, ids, context=context)[0]
+        view_id = self.pool.get('ir.model.data').get_object_reference(cursor, user_id, 'account', 'invoice_form')
+        view_id = view_id and view_id[1] or False
+        view_xml_id = self.pool.get('ir.ui.view').get_xml_id(cursor, user_id, [view_id])[view_id]
 
         return {
             'name': 'Customer Invoices',
             'view_type': 'form',
-            'view_mode': 'tree',
+            'view_mode': 'tree,form',
             'res_model': 'account.invoice',
             'type': 'ir.actions.act_window',
             'nodestroy': True,
             'target': 'current',
-            'res_id': [invoice.id for invoice in order.invoice_ids],
+            'domain': [('origin', '=', order.ref)],
+            'context' : {'form_view_ref' : view_xml_id}
         }
 
     def action_generate_invoices(self, cursor, user_id, ids):
@@ -181,6 +185,32 @@ class RentOrder(osv.osv):
             'state' : 'ongoing',
             'invoice_ids' : [(6, 0, invoices_id)]
         })
+
+        return True
+
+    def action_cancel(self, cursor, user_id, ids):
+
+        """
+        If you cancel the order before invoices have been generated, it's ok.
+        Else, you can cancel only of invoices haven't been confirmed yet.
+        """
+
+        orders = self.browse(cursor, user_id, ids)
+
+        for order in orders:
+
+            if order.state == 'ongoing':
+                invoices_ids = []
+                for invoice in order.invoice_ids:
+                    if invoice.state not in ('draft', 'cancel'):
+                        raise osv.except_osv(_("You can't cancel this order."),
+                            _("This order have confirmed invoice, and can't be deleted right now."))
+                    invoices_ids.append(invoice.id)
+
+                # Else, we just remove the invoices
+                self.pool.get('account.invoice').unlink(cursor, user_id, invoices_ids)
+
+            self.write(cursor, user_id, ids, {'state':'cancelled'})
 
         return True
 
@@ -251,16 +281,17 @@ class RentOrder(osv.osv):
 
         return result
 
-    def get_invoice_between(self, cursor, user_id, order, begin_date, duration):
+    def get_invoice_between(self, cursor, user_id, order, begin_date, duration, current, max):
 
         """
-        Generates an invoice for the specified interval.
+        Generates an invoice at the specified date, for the specified duration. The two last arguenbts current and max
+        defines the maximum number of invoices and the current invoice number. For example: current=4, max=12.
         """
 
         # Create the invoice
         invoice_id = self.pool.get('account.invoice').create(cursor, user_id,
             {
-                'name' : order.ref,
+                'name' : _('Invoice %d/%d') % (current, max),
                 'origin' : order.ref,
                 'type' : 'out_invoice',
                 'state' : 'draft',
@@ -272,8 +303,10 @@ class RentOrder(osv.osv):
         )
 
         # Create the lines
-        for id, line_data in self.pool.get('rent.order.line').get_invoice_lines_data(cursor, user_id, [l.id for l in order.rent_line_ids]).iteritems():
-            line_data.update({'invoice_id':invoice_id})
+        lines_ids = [line.id for line in order.rent_line_ids]
+        lines_data = self.pool.get('rent.order.line').get_invoice_lines_data(cursor, user_id, lines_ids)
+        for line_data in lines_data:
+            line_data['invoice_id'] = invoice_id
             self.pool.get('account.invoice.line').create(cursor, user_id, line_data)
 
         return invoice_id
@@ -292,7 +325,7 @@ class RentOrder(osv.osv):
         Generates only one invoice for the rent duration.
         """
 
-        return [self.get_invoice_between(cursor, user_id, order, order.date_begin_rent, order.rent_duration)]
+        return [self.get_invoice_between(cursor, user_id, order, order.date_begin_rent, order.rent_duration, 1, 1)]
 
     _name = 'rent.order'
     _sql_constraints = []
@@ -475,7 +508,7 @@ class RentOrderLine(osv.osv):
         """
 
         rent_lines = self.browse(cursor, user_id, ids, context)
-        result = {}
+        result = []
 
         for rent_line in rent_lines:
 
@@ -496,9 +529,16 @@ class RentOrderLine(osv.osv):
                 'product_id': rent_line.product_id.id or False,
                 'invoice_line_tax_id': [(6, 0, [x.id for x in rent_line.tax_ids])],
                 'note': rent_line.notes,
+                'sequence' : 10,
             }
 
-            result[rent_line.id] = invoice_line_data
+            result.append(invoice_line_data)
+
+        # Add a header with the rent duration (thanks to account_invoice_layout module
+        result.insert(0, {
+            'state' : 'title',
+            'name' : _('Rent from %s to %s, for a total of %s %s'),
+        })
 
         return result
         
