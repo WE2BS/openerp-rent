@@ -21,10 +21,11 @@ import time
 import logging
 import math
 import netsvc
+import datetime
 
 from osv import osv, fields
 from tools.translate import _
-from tools.misc import cache
+from tools.misc import cache, DEFAULT_SERVER_DATE_FORMAT
 from decimal_precision import get_precision
 
 _logger = logging.getLogger('rent')
@@ -237,6 +238,33 @@ class RentOrder(osv.osv):
 
         return result
 
+    def get_end_date(self, cursor, user_id, ids, field_name, arg, context=None):
+
+        """
+        Returns the rent order end date, based on the duration.
+        """
+
+        orders = self.browse(cursor, user_id, ids, context=context)
+        result = {}
+
+        for order in orders:
+
+            begin = datetime.datetime.strptime(order.date_begin_rent, DEFAULT_SERVER_DATE_FORMAT).date()
+            duration = order.rent_duration
+            days = duration
+
+            if order.rent_duration_unity == 'month':
+                days = duration * UNITIES_FACTORS['day']['month']
+            elif order.rent_duration_unity == 'year':
+                days = duration * UNITIES_FACTORS['day']['year']
+
+            end = begin + datetime.timedelta(days=days)
+            end = end.strftime(DEFAULT_SERVER_DATE_FORMAT)
+
+            result[order.id] = end
+
+        return result
+
     def get_totals(self, cursor, user_id, ids, fields_name, arg, context=None):
 
         """
@@ -346,6 +374,7 @@ class RentOrder(osv.osv):
         'date_begin_rent' : fields.date(_('Rent begin date'), required=True,
             readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'Date of the begin of the leasing.')),
+        'date_end_rent' : fields.function(get_end_date, type="date", method=True, string=_("Rent end date")),
         'rent_duration_unity' : fields.selection(get_duration_unities, _('Duration unity'),
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'The duration unity, available choices depends of your company configuration.')),
