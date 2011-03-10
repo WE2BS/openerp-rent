@@ -149,24 +149,26 @@ class RentOrder(osv.osv):
         The interval is the duration unity : if you rent for 2 Month, there will be 2 invoices.
         """
 
-        print 'ok'
-
         orders = self.browse(cursor, user_id, ids)
-        rent_line_pool, invoice_pool = self.pool.get('rent.order.line'), self.pool.get('account.invoice')
 
         for order in orders:
 
-            order_line_ids = [line.id for line in order.rent_line_ids]
-            order_invoice_period = ''
-
-            # 1- We get the invoice lines data
-            invoice_lines_data = rent_line_pool.get_invoice_lines_data(cursor, user_id, order_line_ids)
-
-            # 2- We create invoices and their lines for each invoice period
             period_function = self._periods[order.rent_invoice_period][1]
             period_function = getattr(self, period_function)
 
-            invoices_dates = period_function(self, cursor, user_id, order)
+            invoices_id = period_function(cursor, user_id, order)
+
+        return {
+            'name': 'Customer Invoices',
+            'view_type': 'form',
+            'view_mode': 'form',
+            'res_model': 'account.invoice',
+            'context': "{'type':'out_invoice'}",
+            'type': 'ir.actions.act_window',
+            'nodestroy': True,
+            'target': 'current',
+            'res_id': invoices_id or False,
+        }
 
     @cache(30)
     def get_duration_unities(self, cursor, user_id, context=None):
@@ -235,6 +237,33 @@ class RentOrder(osv.osv):
 
         return result
 
+    def get_invoice_between(self, cursor, user_id, order, begin_date, duration):
+
+        """
+        Generates an invoice for the specified interval.
+        """
+
+        # Create the invoice
+        invoice_id = self.pool.get('account.invoice').create(cursor, user_id,
+            {
+                'name' : order.ref,
+                'origin' : order.ref,
+                'type' : 'out_invoice',
+                'state' : 'draft',
+                'date_invoice' : begin_date,
+                'partner_id' : order.partner_id.id,
+                'address_invoice_id' : order.partner_invoice_address_id.id,
+                'account_id' : order.partner_id.property_account_receivable.id,
+            }
+        )
+
+        # Create the lines
+        for id, line_data in self.pool.get('rent.order.line').get_invoice_lines_data(cursor, user_id, [l.id for l in order.rent_line_ids]).iteritems():
+            line_data.update({'invoice_id':invoice_id})
+            self.pool.get('account.invoice.line').create(cursor, user_id, line_data)
+
+        return invoice_id
+
     def get_invoice_periods(self, cursor, user_id, context=None):
 
         """
@@ -245,7 +274,7 @@ class RentOrder(osv.osv):
 
     def get_invoices_for_once_period(self, cursor, user_id, order):
 
-        pass
+        return [self.get_invoice_between(cursor, user_id, order, order.date_begin_rent, order.rent_duration)]
 
     _name = 'rent.order'
     _sql_constraints = []
@@ -317,7 +346,6 @@ class RentOrder(osv.osv):
             string=_("Taxes (with discount)"), digits_compute=get_precision('Sale Price')),
         'total_with_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Total (with discount)"), digits_compute=get_precision('Sale Price')),
-
     }
 
     _defaults = {
@@ -443,7 +471,6 @@ class RentOrderLine(osv.osv):
             
             invoice_line_data = {
                 'name': rent_line.description,
-                'origin': rent_line.order_id.ref,
                 'account_id': invoice_line_account_id,
                 'price_unit': rent_line.unit_price,
                 'quantity': rent_line.quantity,
