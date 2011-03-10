@@ -142,6 +142,25 @@ class RentOrder(osv.osv):
 
         return True
 
+    def on_show_invoices_clicked(self, cursor, user_id, ids, context=None):
+
+        """
+        Show the invoices which have been generated.
+        """
+
+        order = self.browse(cursor, user_id, ids, context=context)[0]
+
+        return {
+            'name': 'Customer Invoices',
+            'view_type': 'form',
+            'view_mode': 'tree',
+            'res_model': 'account.invoice',
+            'type': 'ir.actions.act_window',
+            'nodestroy': True,
+            'target': 'current',
+            'res_id': [invoice.id for invoice in order.invoice_ids],
+        }
+
     def action_generate_invoices(self, cursor, user_id, ids):
 
         """
@@ -158,17 +177,12 @@ class RentOrder(osv.osv):
 
             invoices_id = period_function(cursor, user_id, order)
 
-        return {
-            'name': 'Customer Invoices',
-            'view_type': 'form',
-            'view_mode': 'form',
-            'res_model': 'account.invoice',
-            'context': "{'type':'out_invoice'}",
-            'type': 'ir.actions.act_window',
-            'nodestroy': True,
-            'target': 'current',
-            'res_id': invoices_id or False,
-        }
+        self.write(cursor, user_id, ids, {
+            'state' : 'ongoing',
+            'invoice_ids' : [(6, 0, invoices_id)]
+        })
+
+        return True
 
     @cache(30)
     def get_duration_unities(self, cursor, user_id, context=None):
@@ -273,6 +287,10 @@ class RentOrder(osv.osv):
         return [(period, self._periods[period][0]) for period in self._periods]
 
     def get_invoices_for_once_period(self, cursor, user_id, order):
+
+        """
+        Generates only one invoice for the rent duration.
+        """
 
         return [self.get_invoice_between(cursor, user_id, order, order.date_begin_rent, order.rent_duration)]
 
@@ -490,7 +508,7 @@ class RentOrderLine(osv.osv):
         'description' : fields.char(_('Description'), size=180, required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
             'This description will be used in invoices.')),
-        'order_id' : fields.many2one('rent.order', _('Order'), required=True),
+        'order_id' : fields.many2one('rent.order', _('Order'), required=True, ondelete='CASCADE'),
         'product_id' : fields.many2one('product.product', _('Product'), required=True, readonly=True,
              context="{'search_default_rent' : True}", states={'draft': [('readonly', False)]}, help=_(
             'The product you want to rent.'),),
