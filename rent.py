@@ -113,9 +113,10 @@ class RentOrder(osv.osv):
             raise osv.except_osv (
                 _('Client has not any address'), _('You must define a least one default address for this client.'))
 
-        return { 'value' : result }
+        if client.property_account_position.id:
+            result['fiscal_position'] = client.property_account_position.id
 
-        return result
+        return { 'value' : result }
 
     def on_draft_clicked(self, cursor, user_id, ids, context=None):
 
