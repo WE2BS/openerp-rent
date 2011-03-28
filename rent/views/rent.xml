@@ -30,10 +30,15 @@
             <field name="type">form</field>
             <field name="arch" type="xml">
                 <form string="Rent Order">
-                    <field name="ref"/>
-                    <field name="date_created"/>
+                    <group colspan="4" col="6">
+                        <field name="ref"/>
+                        <field name="date_created"/>
+                        <field name="salesman"/>
+                    </group>
+                    <group colspan="4" col="4">
                     <field name="shop_id" widget="selection"/>
-                    <field name="salesman"/>
+                    <field name="fiscal_position" widget="selection"/>
+                    </group>
                     <notebook colspan="4">
                         <page string="Rent Order">
                             <field name="partner_id" on_change="on_client_changed(partner_id)"/>

@@ -25,7 +25,7 @@ import datetime
 
 from osv import osv, fields
 from tools.translate import _
-from tools.misc import cache, DEFAULT_SERVER_DATE_FORMAT
+from tools.misc import cache
 from decimal_precision import get_precision
 
 _logger = logging.getLogger('rent')
@@ -57,8 +57,8 @@ UNITIES_FACTORS = {
 STATES = (
     ('draft', _('Quotation')), # Default state
     ('confirmed', _('Confirmed')), # Confirmed, have to generate invoices
-    ('ongoing', _('Ongoing')), # Invoices generated, waiting for payments
-    ('done', _('Done')), # All invoices have been paid
+    ('ongoing', _('Ongoing')), # Invoices generated, waiting for confirmation
+    ('done', _('Done')), # All invoices have been confirmed
     ('cancelled', _('Cancelled')), # The order has been cancelled
 )
 
@@ -114,9 +114,10 @@ class RentOrder(osv.osv):
             raise osv.except_osv (
                 _('Client has not any address'), _('You must define a least one default address for this client.'))
 
-        return { 'value' : result }
+        if client.property_account_position.id:
+            result['fiscal_position'] = client.property_account_position.id
 
-        return result
+        return { 'value' : result }
 
     def on_draft_clicked(self, cursor, user_id, ids, context=None):
 
@@ -272,7 +273,7 @@ class RentOrder(osv.osv):
         """
 
         result = {}
-        tax_pool = self.pool.get('account.tax')
+        tax_pool, fiscal_position_pool = map(self.pool.get, ['account.tax', 'account.fiscal.position'])
         orders = self.browse(cursor, user_id, ids, context=context)
 
         for order in orders:
@@ -284,8 +285,15 @@ class RentOrder(osv.osv):
 
             for line in order.rent_line_ids:
 
-                # The compute_all function is defined in the account -module  Take a look.
-                prices = tax_pool.compute_all(cursor, user_id, line.tax_ids, line.unit_price, line.quantity)
+                # We map the tax_ids thanks to the fiscal position, if specified. Check account/partner.py
+                # for the map_tax function used to do the mapping.
+                tax_ids = line.tax_ids
+                if order.fiscal_position.id:
+                    tax_ids = tax_pool.browse(cursor, user_id, fiscal_position_pool.map_tax(
+                        cursor, user_id, order.fiscal_position, tax_ids, context=context),context=context)
+                
+                # The compute_all function is defined in the account module  Take a look.
+                prices = tax_pool.compute_all(cursor, user_id, tax_ids, line.unit_price, line.quantity)
 
                 total += prices['total']
                 total_with_taxes += prices['total_included']
@@ -350,7 +358,7 @@ class RentOrder(osv.osv):
     def get_invoices_for_once_period(self, cursor, user_id, order):
 
         """
-        Generates only one invoice for the rent duration.
+        Generates only one invoice (at the end of the rent).
         """
 
         return [self.get_invoice_between(cursor, user_id, order, order.date_begin_rent, order.rent_duration, 1, 1)]
@@ -411,6 +419,9 @@ class RentOrder(osv.osv):
         'discount' : fields.float(_('Global discount (%)'),
             readonly=True, states={'draft': [('readonly', False)]}, help=_(
             'Apply a global discount to this order.')),
+        'fiscal_position' : fields.many2one('account.fiscal.position', _('Fiscal Position'), readonly=True,
+            states={'draft': [('readonly', False)]}, help=_(
+            'Fiscal Position applied to taxes and accounts.')),
         'invoice_ids': fields.many2many('account.invoice', 'rent_order_line_tax', 'rent_order_line_id', 'tax_id',
             _('Taxes'), readonly=True, states={'draft': [('readonly', False)]}),
 
@@ -459,7 +470,7 @@ class RentOrder(osv.osv):
 
 # We register invoice periods for Rent orders.
 # See the doc of register_invoice_period for more informations.
-RentOrder.register_invoice_period('once', _('One invoice'), 'get_invoices_for_once_period')
+RentOrder.register_invoice_period('once', _('One invoice (at end)'), 'get_invoices_for_once_period')
 #RentOrder.register_invoice_period('monthly', _('Monthly'))
 #RentOrder.register_invoice_period('quaterly', _('Quaterly'))
 #RentOrder.register_invoice_period('yearly', _('Yearly'))
@@ -537,7 +548,7 @@ class RentOrderLine(osv.osv):
         """
 
         rent_lines = self.browse(cursor, user_id, ids, context)
-        result = []
+        result = {}
 
         for rent_line in rent_lines:
 
@@ -556,12 +567,11 @@ class RentOrderLine(osv.osv):
                 'quantity': rent_line.quantity,
                 'discount': rent_line.discount,
                 'product_id': rent_line.product_id.id or False,
-                'invoice_line_tax_id': [(6, 0, [x.id for x in rent_line.tax_ids])],
+                'invoice_line_tax_id': [(6, 0, [tax.id for tax in rent_line.tax_ids])],
                 'note': rent_line.notes,
-                'sequence' : 10,
             }
 
-            result.append(invoice_line_data)
+            result[rent_line.id] = invoice_line_data
 
         # Add a header with the rent duration (thanks to account_invoice_layout module
         result.insert(0, {
