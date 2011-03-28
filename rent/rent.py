@@ -25,7 +25,7 @@ import datetime
 
 from osv import osv, fields
 from tools.translate import _
-from tools.misc import cache
+from tools.misc import cache, DEFAULT_SERVER_DATE_FORMAT
 from decimal_precision import get_precision
 
 _logger = logging.getLogger('rent')
@@ -194,7 +194,7 @@ class RentOrder(osv.osv):
 
         """
         If you cancel the order before invoices have been generated, it's ok.
-        Else, you can cancel only of invoices haven't been confirmed yet.
+        Else, you can cancel only if invoices haven't been confirmed yet.
         """
 
         orders = self.browse(cursor, user_id, ids)
@@ -341,6 +341,7 @@ class RentOrder(osv.osv):
         # Create the lines
         lines_ids = [line.id for line in order.rent_line_ids]
         lines_data = self.pool.get('rent.order.line').get_invoice_lines_data(cursor, user_id, lines_ids)
+        
         for line_data in lines_data:
             line_data['invoice_id'] = invoice_id
             self.pool.get('account.invoice.line').create(cursor, user_id, line_data)
@@ -548,7 +549,7 @@ class RentOrderLine(osv.osv):
         """
 
         rent_lines = self.browse(cursor, user_id, ids, context)
-        result = {}
+        result = []
 
         for rent_line in rent_lines:
 
@@ -559,7 +560,7 @@ class RentOrderLine(osv.osv):
             if not invoice_line_account_id:
                 raise osv.except_osv(_('Error !'), _('There is no income account defined for this product: "%s" (id:%d)')
                     % (rent_line.product_id.name, rent_line.product_id.id,))
-            
+
             invoice_line_data = {
                 'name': rent_line.description,
                 'account_id': invoice_line_account_id,
@@ -567,11 +568,12 @@ class RentOrderLine(osv.osv):
                 'quantity': rent_line.quantity,
                 'discount': rent_line.discount,
                 'product_id': rent_line.product_id.id or False,
-                'invoice_line_tax_id': [(6, 0, [tax.id for tax in rent_line.tax_ids])],
+                'invoice_line_tax_id': [(6, 0, [x.id for x in rent_line.tax_ids])],
                 'note': rent_line.notes,
+                'sequence' : 10,
             }
 
-            result[rent_line.id] = invoice_line_data
+            result.append(invoice_line_data)
 
         # Add a header with the rent duration (thanks to account_invoice_layout module
         result.insert(0, {
