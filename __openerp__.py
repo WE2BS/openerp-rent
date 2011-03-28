@@ -27,7 +27,7 @@
     """
     This module manages the leasing of products to partners.
     """,
-    "depends": ["base", "sale"],
+    "depends": ["base", "account", "sale"],
     "init_xml": [],
     "demo_xml": [],
     "update_xml": ['views/rent.xml', 'views/product.xml', 'views/company.xml', 'views/menus.xml', 'views/sequence.xml',

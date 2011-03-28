@@ -56,8 +56,8 @@ UNITIES_FACTORS = {
 STATES = (
     ('draft', _('Quotation')), # Default state
     ('confirmed', _('Confirmed')), # Confirmed, have to generate invoices
-    ('ongoing', _('Ongoing')), # Invoices generated, waiting for payments
-    ('done', _('Done')), # All invoices have been paid
+    ('ongoing', _('Ongoing')), # Invoices generated, waiting for confirmation
+    ('done', _('Done')), # All invoices have been confirmed
     ('cancelled', _('Cancelled')), # The order has been cancelled
 )
 
@@ -148,8 +148,6 @@ class RentOrder(osv.osv):
         This action is called by the workflow activity 'ongoing'. We generate an invoice for the duration period.
         The interval is the duration unity : if you rent for 2 Month, there will be 2 invoices.
         """
-
-        print 'ok'
 
         orders = self.browse(cursor, user_id, ids)
         rent_line_pool, invoice_pool = self.pool.get('rent.order.line'), self.pool.get('account.invoice')
@@ -245,6 +243,10 @@ class RentOrder(osv.osv):
 
     def get_invoices_for_once_period(self, cursor, user_id, order):
 
+        """
+        Generates only one invoice (at the end of the rent).
+        """
+
         pass
 
     _name = 'rent.order'
@@ -302,6 +304,9 @@ class RentOrder(osv.osv):
         'discount' : fields.float(_('Global discount (%)'),
             readonly=True, states={'draft': [('readonly', False)]}, help=_(
             'Apply a global discount to this order.')),
+        'fiscal_position' : fields.many2one('account.fiscal.position', _('Fiscal Position'), readonly=True,
+            states={'draft': [('readonly', False)]}, help=_(
+            'Fiscal Position applied to taxes and accounts.')),
         'invoice_ids': fields.many2many('account.invoice', 'rent_order_line_tax', 'rent_order_line_id', 'tax_id',
             _('Taxes'), readonly=True, states={'draft': [('readonly', False)]}),
 
@@ -351,7 +356,7 @@ class RentOrder(osv.osv):
 
 # We register invoice periods for Rent orders.
 # See the doc of register_invoice_period for more informations.
-RentOrder.register_invoice_period('once', _('One invoice'), 'get_invoices_for_once_period')
+RentOrder.register_invoice_period('once', _('One invoice (at end)'), 'get_invoices_for_once_period')
 #RentOrder.register_invoice_period('monthly', _('Monthly'))
 #RentOrder.register_invoice_period('quaterly', _('Quaterly'))
 #RentOrder.register_invoice_period('yearly', _('Yearly'))
@@ -449,7 +454,7 @@ class RentOrderLine(osv.osv):
                 'quantity': rent_line.quantity,
                 'discount': rent_line.discount,
                 'product_id': rent_line.product_id.id or False,
-                'invoice_line_tax_id': [(6, 0, [x.id for x in rent_line.tax_ids])],
+                'invoice_line_tax_id': [(6, 0, [tax.id for tax in rent_line.tax_ids])],
                 'note': rent_line.notes,
             }
 
