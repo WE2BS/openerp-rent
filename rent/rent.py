@@ -62,6 +62,11 @@ STATES = (
     ('cancelled', _('Cancelled')), # The order has been cancelled
 )
 
+PRODUCT_TYPE = (
+    ('rent', _('Rent')),
+    ('service', _('Service')),
+)
+
 class RentOrder(osv.osv):
 
     # A Rent Order is almost like a Sale Order except that the way we generate invoices
@@ -293,7 +298,7 @@ class RentOrder(osv.osv):
                         cursor, user_id, order.fiscal_position, tax_ids, context=context),context=context)
                 
                 # The compute_all function is defined in the account module  Take a look.
-                prices = tax_pool.compute_all(cursor, user_id, tax_ids, line.unit_price, line.quantity)
+                prices = tax_pool.compute_all(cursor, user_id, tax_ids, line.real_price, line.quantity)
 
                 total += prices['total']
                 total_with_taxes += prices['total_included']
@@ -324,8 +329,10 @@ class RentOrder(osv.osv):
         defines the maximum number of invoices and the current invoice number. For example: current=4, max=12.
         """
 
+        invoice_pool, invoice_line_pool = map(self.pool.get, ('account.invoice', 'account.invoice.line'))
+
         # Create the invoice
-        invoice_id = self.pool.get('account.invoice').create(cursor, user_id,
+        invoice_id = invoice_pool.create(cursor, user_id,
             {
                 'name' : _('Invoice %d/%d') % (current, max),
                 'origin' : order.ref,
@@ -344,14 +351,14 @@ class RentOrder(osv.osv):
         
         for line_data in lines_data:
             line_data['invoice_id'] = invoice_id
-            self.pool.get('account.invoice.line').create(cursor, user_id, line_data)
+            invoice_line_pool.create(cursor, user_id, line_data)
 
         return invoice_id
 
     def get_invoice_periods(self, cursor, user_id, context=None):
 
         """
-        Returns a list of available periods (that have been registered with register_invoice_period()).
+        Returns a list of available periods (which have been registered with register_invoice_period()).
         """
 
         return [(period, self._periods[period][0]) for period in self._periods]
@@ -488,6 +495,7 @@ class RentOrderLine(osv.osv):
         This method is called when the product changed :
             - Fill the tax_ids field with product's taxes
             - Fill the description field with product's name
+            - Fill the product UoM
         """
 
         result = {}
@@ -498,11 +506,17 @@ class RentOrderLine(osv.osv):
         product = self.pool.get('product.product').browse(cursor, user_id, product_id)
 
         if not product.id:
-            return result
+            return result # Might never happened
 
         result['description'] = product.name
         result['tax_ids'] = [tax.id for tax in product.taxes_id]
         result['product_id_uom'] = product.uom_id.id
+        result['product_type'] = 'rent' if product.can_be_rent else 'service'
+
+        if result['product_type'] == 'rent':
+            result['unit_price'] = product.rent_price
+        else:
+            result['unit_price'] = product.list_price
 
         return {'value' : result}
 
@@ -528,16 +542,27 @@ class RentOrderLine(osv.osv):
 
             product_price_factor = UNITIES_FACTORS[product_price_unity][order_unity]
 
-            # The factor is used to convert the product price unity into the order price unity.
-            # Example:
-            #   UNITIES_FACTORS['day']['year'] will return a factor to convert days to years
-            #   (365 in this case). So, to convert a price which is defined per day in price per year,
-            #   you have to multiply the price per 365.
-            unit_price = line.product_id.rent_price * product_price_factor * order_duration
+            if line.product_type == 'rent':
+                # The factor is used to convert the product price unity into the order price unity.
+                # Example:
+                #   UNITIES_FACTORS['day']['year'] will return a factor to convert days to years
+                #   (365 in this case). So, to convert a price which is defined per day in price per year,
+                #   you have to multiply the price per 365.
+                rent_price = line.unit_price * product_price_factor * order_duration
+                order_price = 0
+                line_price = rent_price * line.quantity
+                real_price = rent_price
+            else:
+                rent_price = 0
+                order_price = line.unit_price
+                line_price = order_price * line.quantity
+                real_price = order_price
 
             result[line.id] = {
-                'unit_price' : unit_price,
-                'line_price' : unit_price * line.quantity,
+                'rent_price' : rent_price,
+                'order_price' : order_price,
+                'line_price' : line_price * (1-line.discount/100.0),
+                'real_price' : real_price,
             }
 
         return result
@@ -575,14 +600,21 @@ class RentOrderLine(osv.osv):
 
             result.append(invoice_line_data)
 
-        # Add a header with the rent duration (thanks to account_invoice_layout module
-        result.insert(0, {
-            'state' : 'title',
-            'name' : _('Rent from %s to %s, for a total of %s %s'),
-        })
-
         return result
-        
+
+    def check_order_price(self, cursor, user_id, ids, context=None):
+
+        """
+        The order price must me > 0 if the procu can't be rented.
+        """
+
+        lines = self.browse(cursor, user_id, ids, context)
+
+        for line in lines:
+            if not line.product_id.can_be_rent and line.order_price <= 0:
+                return False
+        return True
+
     _name = 'rent.order.line'
     _rec_name = 'description'
     _columns = {
@@ -593,6 +625,11 @@ class RentOrderLine(osv.osv):
         'product_id' : fields.many2one('product.product', _('Product'), required=True, readonly=True,
              context="{'search_default_rent' : True}", states={'draft': [('readonly', False)]}, help=_(
             'The product you want to rent.'),),
+        'product_type' : fields.selection(PRODUCT_TYPE, _('Type of product'), required=True, readonly=True,
+            states={'draft': [('readonly', False)]}, help=_(
+                "Select Rent if you want to rent this product. Service means that you will sell this product "
+                "with the others rented products. Use it to sell some services like installation or assurances. "
+                "Products which are sold will be invoiced once, with the first invoice.")),
         'product_id_uom' : fields.related('product_id', 'uom_id', relation='product.uom', type='many2one',
             string=_('UoM'), readonly=True, help=_('The Unit of Measure of this product.')),
         'quantity' : fields.integer(_('Quantity'), required=True, readonly=True,
@@ -602,10 +639,17 @@ class RentOrderLine(osv.osv):
             states={'draft': [('readonly', False)]}, help=_(
             'If you want to apply a discount on this order line.')),
         'state' : fields.related('order_id', 'state', type='selection', selection=STATES, readonly=True, string=_('State')),
-        'tax_ids': fields.many2many('account.tax', 'rent_order_line_tax', 'rent_order_line_id', 'tax_id',
+        'tax_ids': fields.many2many('account.tax', 'rent_order_line_taxes', 'rent_order_line_id', 'tax_id',
             _('Taxes'), readonly=True, states={'draft': [('readonly', False)]}),
         'notes' : fields.text(_('Notes')),
-        'unit_price' : fields.function(get_prices, method=True, multi=True, type="float", string=_("Price per duration")),
+        'unit_price' : fields.float(_('Price'), required=True, states={'draft':[('readonly', False)]}, help=_(
+            'The price per duration or the sale price, depending of the product type.')),
+        'real_price' : fields.function(get_prices, method=True, multi=True, type="float", string=_("Price for duration"),
+            help=_('This price correspond to the price of the product, not matter its type. In the case of a rented '
+                   'product, its equal to the price for the duration, and in the case of a service product, to the'
+                   'unit price of the product.')),
+        'rent_price' : fields.function(get_prices, method=True, multi=True, type="float", string=_("Price per duration")),
+        'order_price' : fields.function(get_prices, method=True, multi=True, type="float", string=_("Price at order")),
         'line_price' : fields.function(get_prices, method=True, multi=True, type="float", string=_("Subtotal")),
     }
 
@@ -613,10 +657,12 @@ class RentOrderLine(osv.osv):
         'state' : STATES[0][0],
         'quantity' : 1,
         'discount' : 0.0,
+        'order_price' : 0.0,
     }
 
     _sql_constraints = [
         ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
+        ('valid_price', 'CHECK(price > 0)', _('The price must be superior to 0.'))
     ]
 
 RentOrder(), RentOrderLine()
