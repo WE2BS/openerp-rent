@@ -602,7 +602,7 @@ class RentOrderLine(osv.osv):
 
         return result
 
-    def check_order_price(self, cursor, user_id, ids, context=None):
+    def check_product_type(self, cursor, user_id, ids, context=None):
 
         """
         The order price must me > 0 if the procu can't be rented.
@@ -611,8 +611,11 @@ class RentOrderLine(osv.osv):
         lines = self.browse(cursor, user_id, ids, context)
 
         for line in lines:
-            if not line.product_id.can_be_rent and line.order_price <= 0:
+            if line.product_type == 'rent' and not line.product_id.can_be_rent:
                 return False
+            elif line.product_type == 'service':
+                if line.product_id.type != 'service' or not line.product_id.sale_ok:
+                    return False
         return True
 
     _name = 'rent.order.line'
@@ -663,6 +666,12 @@ class RentOrderLine(osv.osv):
     _sql_constraints = [
         ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
         ('valid_price', 'CHECK(price > 0)', _('The price must be superior to 0.'))
+    ]
+
+    _constraints = [
+        (check_product_type, _("You can't use this product type with this product. "
+            "Check that the product is marked for rent or for sale. Moreover, "
+            "Service products must be declared as 'Service' in the product view."), ['product_type']),
     ]
 
 RentOrder(), RentOrderLine()
