@@ -197,7 +197,7 @@ class RentOrder(osv.osv):
         """
 
         result = {}
-        tax_pool = self.pool.get('account.tax')
+        tax_pool, fiscal_position_pool = map(self.pool.get, ['account.tax', 'account.fiscal.position'])
         orders = self.browse(cursor, user_id, ids, context=context)
 
         for order in orders:
@@ -209,8 +209,15 @@ class RentOrder(osv.osv):
 
             for line in order.rent_line_ids:
 
-                # The compute_all function is defined in the account -module  Take a look.
-                prices = tax_pool.compute_all(cursor, user_id, line.tax_ids, line.unit_price, line.quantity)
+                # We map the tax_ids thanks to the fiscal position, if specified. Check account/partner.py
+                # for the map_tax function used to do the mapping.
+                tax_ids = line.tax_ids
+                if order.fiscal_position.id:
+                    tax_ids = tax_pool.browse(cursor, user_id, fiscal_position_pool.map_tax(
+                        cursor, user_id, order.fiscal_position, tax_ids, context=context),context=context)
+                
+                # The compute_all function is defined in the account module  Take a look.
+                prices = tax_pool.compute_all(cursor, user_id, tax_ids, line.unit_price, line.quantity)
 
                 total += prices['total']
                 total_with_taxes += prices['total_included']
