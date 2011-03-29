@@ -25,7 +25,7 @@ import datetime
 
 from osv import osv, fields
 from tools.translate import _
-from tools.misc import cache, DEFAULT_SERVER_DATE_FORMAT
+from tools.misc import cache, DEFAULT_SERVER_DATETIME_FORMAT
 from decimal_precision import get_precision
 
 _logger = logging.getLogger('rent')
@@ -181,19 +181,23 @@ class RentOrder(osv.osv):
 
         orders = self.browse(cursor, user_id, ids)
         move_pool, picking_pool = map(self.pool.get, ('stock.move','stock.picking'))
+        workflow = netsvc.LocalService("workflow")
 
         for order in orders:
 
             out_picking_id = False
             in_picking_id = False
+            output_id = order.shop_id.warehouse_id.lot_output_id.id
+            location_id = order.shop_id.warehouse_id.lot_stock_id.id
             
             for line in order.rent_line_ids:
 
-                if line.product_id.type not in ('service', 'consu'):
+                if line.product_id.product_tmpl_id.type not in ('product', 'consu'):
                     continue
 
                 # We create picking only if there is at least one product to move.
-                # That's why we do it after checking the product type.
+                # That's why we do it after checking the product type, because it could be
+                # service rent only.
                 if not out_picking_id or not in_picking_id:
                     out_picking_id = picking_pool.create(cursor, user_id, {
                         'origin' : order.ref,
@@ -205,28 +209,25 @@ class RentOrder(osv.osv):
                         'address_id' : order.partner_shipping_address_id.id,
                     })
 
-#                move_pool.create(cursor, user_id, {
-#                        'name': line.description[:180],
-#                        'picking_id': out_picking_id,
-#                        'product_id': line.product_id.id,
-#                        'date': date_planned,
-#                        'date_expected': date_planned,
-#                        'product_qty': line.product_uom_qty,
-#                        'product_uom': line.product_uom.id,
-#                        'product_uos_qty': line.product_uos_qty,
-#                        'product_uos': (line.product_uos and line.product_uos.id)\
-#                                or line.product_uom.id,
-#                        'product_packaging': line.product_packaging.id,
-#                        'address_id': line.address_allotment_id.id or order.partner_shipping_id.id,
-#                        'location_id': location_id,
-#                        'location_dest_id': output_id,
-#                        'sale_line_id': line.id,
-#                        'tracking_id': False,
-#                        'state': 'draft',
-#                        #'state': 'waiting',
-#                        'note': line.notes,
-#                        'company_id': order.company_id.id,
-#                })
+                # Out move: Stock -> Client
+                move_pool.create(cursor, user_id, {
+                    'name': line.description[:180],
+                    'picking_id': out_picking_id,
+                    'product_id': line.product_id.id,
+                    'date': time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
+                    'date_expected': order.date_begin_rent,
+                    'product_qty': line.quantity,
+                    'product_uom': line.product_id_uom.id,
+                    'address_id': order.partner_shipping_address_id.id,
+                    'location_id': location_id,
+                    'location_dest_id': output_id,
+                    'tracking_id': False,
+                    'state': 'draft',
+                })
+
+            # Confirm picking orders
+            if out_picking_id: workflow.trg_validate(user_id, 'stock.picking', out_picking_id, 'button_confirm', cursor)
+            if in_picking_id: workflow.trg_validate(user_id, 'stock.picking', in_picking_id, 'button_confirm', cursor)
 
         self.write(cursor, user_id, ids, {'state':'confirmed'})
 
@@ -442,15 +443,13 @@ class RentOrder(osv.osv):
         'ref' : fields.char(_('Reference'), size=128, required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
             'The reference is a unique identifier that identify this order.')),
-        'date_created' : fields.date(_('Date'), readonly=True, required=True,
+        'date_created' : fields.datetime(_('Date'), readonly=True, required=True,
             states={'draft': [('readonly', False)]}, help=_(
             'Date of the creation of this order.')),
-        'date_confirmed' : fields.date(_('Confirm date'), help=_(
-            'Date on which the Rent Order has been confirmed.')),
-        'date_begin_rent' : fields.date(_('Rent begin date'), required=True,
+        'date_begin_rent' : fields.datetime(_('Rent begin date'), required=True,
             readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'Date of the begin of the leasing.')),
-        'date_end_rent' : fields.function(get_end_date, type="date", method=True, string=_("Rent end date")),
+        'date_end_rent' : fields.function(get_end_date, type="datetime", method=True, string=_("Rent end date")),
         'rent_duration_unity' : fields.selection(get_duration_unities, _('Duration unity'),
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'The duration unity, available choices depends of your company configuration.')),
@@ -508,9 +507,9 @@ class RentOrder(osv.osv):
 
     _defaults = {
         'date_created':
-            lambda *args, **kwargs: time.strftime('%Y-%m-%d'),
+            lambda *args, **kwargs: time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
         'date_begin_rent':
-            lambda *args, **kwargs: time.strftime('%Y-%m-%d'),
+            lambda *args, **kwargs: time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
         'state':
             'draft',
         'salesman': # Default salesman is the curent user
