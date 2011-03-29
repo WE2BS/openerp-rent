@@ -172,6 +172,66 @@ class RentOrder(osv.osv):
             'context' : {'form_view_ref' : view_xml_id}
         }
 
+    def action_confirmed(self, cursor, user_id, ids):
+
+        """
+        This action is called by the workflow actvity 'confirmed'. We create a deliver order for products
+        of type 'consu' or 'stockable'. We also create a receipt order, for when the product will come back.
+        """
+
+        orders = self.browse(cursor, user_id, ids)
+        move_pool, picking_pool = map(self.pool.get, ('stock.move','stock.picking'))
+
+        for order in orders:
+
+            out_picking_id = False
+            in_picking_id = False
+            
+            for line in order.rent_line_ids:
+
+                if line.product_id.type not in ('service', 'consu'):
+                    continue
+
+                # We create picking only if there is at least one product to move.
+                # That's why we do it after checking the product type.
+                if not out_picking_id or not in_picking_id:
+                    out_picking_id = picking_pool.create(cursor, user_id, {
+                        'origin' : order.ref,
+                        'type' : 'out',
+                        'state' : 'auto',
+                        'move_type' : 'one',
+                        'invoice_state' : 'none',
+                        'date' : datetime.datetime.now(),
+                        'address_id' : order.partner_shipping_address_id.id,
+                    })
+
+#                move_pool.create(cursor, user_id, {
+#                        'name': line.description[:180],
+#                        'picking_id': out_picking_id,
+#                        'product_id': line.product_id.id,
+#                        'date': date_planned,
+#                        'date_expected': date_planned,
+#                        'product_qty': line.product_uom_qty,
+#                        'product_uom': line.product_uom.id,
+#                        'product_uos_qty': line.product_uos_qty,
+#                        'product_uos': (line.product_uos and line.product_uos.id)\
+#                                or line.product_uom.id,
+#                        'product_packaging': line.product_packaging.id,
+#                        'address_id': line.address_allotment_id.id or order.partner_shipping_id.id,
+#                        'location_id': location_id,
+#                        'location_dest_id': output_id,
+#                        'sale_line_id': line.id,
+#                        'tracking_id': False,
+#                        'state': 'draft',
+#                        #'state': 'waiting',
+#                        'note': line.notes,
+#                        'company_id': order.company_id.id,
+#                })
+
+        self.write(cursor, user_id, ids, {'state':'confirmed'})
+
+        return True
+
     def action_generate_invoices(self, cursor, user_id, ids):
 
         """
@@ -190,7 +250,7 @@ class RentOrder(osv.osv):
 
         self.write(cursor, user_id, ids, {
             'state' : 'ongoing',
-            'invoice_ids' : [(6, 0, invoices_id)]
+            'invoices_ids' : [(6, 0, invoices_id)]
         })
 
         return True
@@ -208,7 +268,7 @@ class RentOrder(osv.osv):
 
             if order.state == 'ongoing':
                 invoices_ids = []
-                for invoice in order.invoice_ids:
+                for invoice in order.invoices_ids:
                     if invoice.state not in ('draft', 'cancel'):
                         raise osv.except_osv(_("You can't cancel this order."),
                             _("This order have confirmed invoice, and can't be deleted right now."))
@@ -430,9 +490,8 @@ class RentOrder(osv.osv):
         'fiscal_position' : fields.many2one('account.fiscal.position', _('Fiscal Position'), readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
             'Fiscal Position applied to taxes and accounts.')),
-        'invoice_ids': fields.many2many('account.invoice', 'rent_order_line_tax', 'rent_order_line_id', 'tax_id',
-            _('Taxes'), readonly=True, states={'draft': [('readonly', False)]}),
-
+        'invoices_ids': fields.many2many('account.invoice', 'rent_order_invoices', 'rent_order_id', 'invoice_id',
+            _('Invoices'), readonly=True),
         'total' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Untaxed amount"), digits_compute=get_precision('Sale Price')),
         'total_with_taxes' : fields.function(get_totals, multi=True, method=True, type="float",

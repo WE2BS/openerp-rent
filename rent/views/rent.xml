@@ -67,6 +67,9 @@
                                 <button name="on_compute_clicked" string="Compute" icon="gtk-execute" colspan="2"/>
                             </group>
                         </page>
+                        <page string="Invoices">
+                            <field name="invoices_ids" nolabel="1"/>
+                        </page>
                         <page string="Notes">
                             <field name="notes" colspan="4" nolabel="1"/>
                         </page>

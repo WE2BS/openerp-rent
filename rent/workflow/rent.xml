@@ -19,7 +19,7 @@
             <field name="wkf_id" ref="rent_workflow"/>
             <field name="name">confirmed</field>
             <field name="kind">function</field>
-            <field name="action">write({'state' : 'confirmed'})</field>
+            <field name="action">action_confirmed()</field>
         </record>
         <record id="state_ongoing" model="workflow.activity">
             <field name="wkf_id" ref="rent_workflow"/>
