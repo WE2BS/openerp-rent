@@ -188,8 +188,8 @@ class RentOrder(osv.osv):
 
             out_picking_id = False
             in_picking_id = False
-            output_id = order.shop_id.warehouse_id.lot_output_id.id
-            location_id = order.shop_id.warehouse_id.lot_stock_id.id
+            warehouse_stock_id = order.shop_id.warehouse_id.lot_stock_id.id
+            customer_output_id = order.partner_shipping_address_id.partner_id.property_stock_customer.id
             procurments_ids = []
             
             for line in order.rent_line_ids:
@@ -208,7 +208,7 @@ class RentOrder(osv.osv):
                         'state' : 'auto',
                         'move_type' : 'one',
                         'invoice_state' : 'none',
-                        'date' : datetime.datetime.now(),
+                        'date' : time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
                         'address_id' : order.partner_shipping_address_id.id,
                         'company_id' : order.company_id.id,
                     })
@@ -219,7 +219,7 @@ class RentOrder(osv.osv):
                         'state' : 'auto',
                         'move_type' : 'one',
                         'invoice_state' : 'none',
-                        'date' : datetime.datetime.now(),
+                        'date' : time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
                         'address_id' : order.partner_shipping_address_id.id,
                         'company_id' : order.company_id.id,
                     })
@@ -233,28 +233,20 @@ class RentOrder(osv.osv):
                     'date_expected': order.date_begin_rent,
                     'product_qty': line.quantity,
                     'product_uom': line.product_id_uom.id,
+                    'product_uos' : line.product_id_uom.id,
+                    'product_uos_qty' : line.quantity,
                     'address_id': order.partner_shipping_address_id.id,
-                    'location_id': location_id,
-                    'location_dest_id': output_id,
+                    'location_id': warehouse_stock_id,
+                    'location_dest_id' : customer_output_id,
                     'state': 'draft',
                 })
 
-                # Procurment order for out move
-                procurments_ids.append(procurment_pool.create(cursor, user_id, {
-                    'name': line.description,
-                    'origin': order.ref,
-                    'date_planned': order.date_begin_rent,
-                    'product_id': line.product_id.id,
-                    'product_qty': line.quantity,
-                    'product_uom': line.product_id_uom.id,
-                    'location_id': location_id,
-                    'procure_method': 'make_to_stock',
-                    'move_id': out_move_id,
-                    'company_id': order.company_id.id,
-                }))
+                # We retrieve the default location_dest_id used in the out move. It correspond to
+                # the supplier output location, we will use it as a source for the in move.
 
-                # In Move (for the end of the rent) CLient -> Stock
-                move_pool.create(cursor, user_id, {
+
+                # In move: Client -> Stock
+                in_move_id = move_pool.create(cursor, user_id, {
                     'name': line.description,
                     'picking_id': in_picking_id,
                     'product_id': line.product_id.id,
@@ -262,19 +254,24 @@ class RentOrder(osv.osv):
                     'date_expected': order.date_end_rent,
                     'product_qty': line.quantity,
                     'product_uom': line.product_id_uom.id,
-                    'product_uos' : line.product_id_uom.id, # TODO: Use real UoS, UoS Qty and packaging
-                    'product_uos_qty' : line.quantity,
                     'address_id': order.partner_shipping_address_id.id,
-                    'location_id': output_id,
-                    'location_dest_id': location_id,
+                    'location_id': customer_output_id,
+                    'location_dest_id': warehouse_stock_id,
                     'state': 'draft',
                 })
 
-            # Confirm picking orders and procurments
-            if out_picking_id: workflow.trg_validate(user_id, 'stock.picking', out_picking_id, 'button_confirm', cursor)
-            if in_picking_id: workflow.trg_validate(user_id, 'stock.picking', in_picking_id, 'button_confirm', cursor)
-            for procurment_id in  procurments_ids:
-                workflow.trg_validate(user_id, 'procurement.order', procurment_id, 'button_confirm', cursor)
+            # Confirm picking orders
+            if out_picking_id:
+                workflow.trg_validate(user_id, 'stock.picking', out_picking_id, 'button_confirm', cursor)
+            if in_picking_id:
+                workflow.trg_validate(user_id, 'stock.picking', in_picking_id, 'button_confirm', cursor)
+
+            # Check assignement
+            picking_pool.action_assign(cursor, user_id, [out_picking_id, in_picking_id])
+
+            # And procurments
+            #for procurment_id in  procurments_ids:
+            #    workflow.trg_validate(user_id, 'procurement.order', procurment_id, 'button_confirm', cursor)
 
         self.write(cursor, user_id, ids, {'state':'confirmed'})
 
