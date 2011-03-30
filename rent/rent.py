@@ -180,7 +180,8 @@ class RentOrder(osv.osv):
         """
 
         orders = self.browse(cursor, user_id, ids)
-        move_pool, picking_pool = map(self.pool.get, ('stock.move','stock.picking'))
+        move_pool, picking_pool, procurment_pool = map(
+            self.pool.get, ('stock.move', 'stock.picking', 'procurement.order'))
         workflow = netsvc.LocalService("workflow")
 
         for order in orders:
@@ -189,6 +190,7 @@ class RentOrder(osv.osv):
             in_picking_id = False
             output_id = order.shop_id.warehouse_id.lot_output_id.id
             location_id = order.shop_id.warehouse_id.lot_stock_id.id
+            procurments_ids = []
             
             for line in order.rent_line_ids:
 
@@ -199,6 +201,7 @@ class RentOrder(osv.osv):
                 # That's why we do it after checking the product type, because it could be
                 # service rent only.
                 if not out_picking_id or not in_picking_id:
+
                     out_picking_id = picking_pool.create(cursor, user_id, {
                         'origin' : order.ref,
                         'type' : 'out',
@@ -207,11 +210,23 @@ class RentOrder(osv.osv):
                         'invoice_state' : 'none',
                         'date' : datetime.datetime.now(),
                         'address_id' : order.partner_shipping_address_id.id,
+                        'company_id' : order.company_id.id,
+                    })
+
+                    in_picking_id = picking_pool.create(cursor, user_id, {
+                        'origin' : order.ref,
+                        'type' : 'in',
+                        'state' : 'auto',
+                        'move_type' : 'one',
+                        'invoice_state' : 'none',
+                        'date' : datetime.datetime.now(),
+                        'address_id' : order.partner_shipping_address_id.id,
+                        'company_id' : order.company_id.id,
                     })
 
                 # Out move: Stock -> Client
-                move_pool.create(cursor, user_id, {
-                    'name': line.description[:180],
+                out_move_id = move_pool.create(cursor, user_id, {
+                    'name': line.description,
                     'picking_id': out_picking_id,
                     'product_id': line.product_id.id,
                     'date': time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
@@ -221,13 +236,45 @@ class RentOrder(osv.osv):
                     'address_id': order.partner_shipping_address_id.id,
                     'location_id': location_id,
                     'location_dest_id': output_id,
-                    'tracking_id': False,
                     'state': 'draft',
                 })
 
-            # Confirm picking orders
+                # Procurment order for out move
+                procurments_ids.append(procurment_pool.create(cursor, user_id, {
+                    'name': line.description,
+                    'origin': order.ref,
+                    'date_planned': order.date_begin_rent,
+                    'product_id': line.product_id.id,
+                    'product_qty': line.quantity,
+                    'product_uom': line.product_id_uom.id,
+                    'location_id': location_id,
+                    'procure_method': 'make_to_stock',
+                    'move_id': out_move_id,
+                    'company_id': order.company_id.id,
+                }))
+
+                # In Move (for the end of the rent) CLient -> Stock
+                move_pool.create(cursor, user_id, {
+                    'name': line.description,
+                    'picking_id': in_picking_id,
+                    'product_id': line.product_id.id,
+                    'date': time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
+                    'date_expected': order.date_end_rent,
+                    'product_qty': line.quantity,
+                    'product_uom': line.product_id_uom.id,
+                    'product_uos' : line.product_id_uom.id, # TODO: Use real UoS, UoS Qty and packaging
+                    'product_uos_qty' : line.quantity,
+                    'address_id': order.partner_shipping_address_id.id,
+                    'location_id': output_id,
+                    'location_dest_id': location_id,
+                    'state': 'draft',
+                })
+
+            # Confirm picking orders and procurments
             if out_picking_id: workflow.trg_validate(user_id, 'stock.picking', out_picking_id, 'button_confirm', cursor)
             if in_picking_id: workflow.trg_validate(user_id, 'stock.picking', in_picking_id, 'button_confirm', cursor)
+            for procurment_id in  procurments_ids:
+                workflow.trg_validate(user_id, 'procurement.order', procurment_id, 'button_confirm', cursor)
 
         self.write(cursor, user_id, ids, {'state':'confirmed'})
 
@@ -316,7 +363,7 @@ class RentOrder(osv.osv):
 
         for order in orders:
 
-            begin = datetime.datetime.strptime(order.date_begin_rent, DEFAULT_SERVER_DATE_FORMAT).date()
+            begin = datetime.datetime.strptime(order.date_begin_rent, DEFAULT_SERVER_DATETIME_FORMAT)
             duration = order.rent_duration
             days = duration
 
@@ -326,7 +373,7 @@ class RentOrder(osv.osv):
                 days = duration * UNITIES_FACTORS['day']['year']
 
             end = begin + datetime.timedelta(days=days)
-            end = end.strftime(DEFAULT_SERVER_DATE_FORMAT)
+            end = end.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 
             result[order.id] = end
 
@@ -465,6 +512,8 @@ class RentOrder(osv.osv):
         'shop_id': fields.many2one('sale.shop', 'Shop', required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
             'The shop where this order was created.')),
+        'company_id': fields.related('shop_id', 'company_id', type='many2one', relation='res.company',
+            string=_('Company'), store=True, readonly=True),
         'partner_id': fields.many2one('res.partner', _('Customer'), required=True, change_default=True,
             domain=[('customer', '=', 'True')], context={'search_default_customer' : True},
             readonly=True, states={'draft' : [('readonly', False)]}, help=_(
