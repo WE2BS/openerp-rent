@@ -187,6 +187,9 @@ class RentOrder(osv.osv):
 
         for order in orders:
 
+            if order.out_picking_id or order.in_picking_id:
+                continue # TODO: Maybe not ignore them if they already exists.
+
             out_picking_id = False
             in_picking_id = False
 
@@ -262,10 +265,13 @@ class RentOrder(osv.osv):
                 })
 
             # Confirm picking orders
-            if out_picking_id:
+            if out_picking_id and in_picking_id:
                 workflow.trg_validate(user_id, 'stock.picking', out_picking_id, 'button_confirm', cursor)
-            if in_picking_id:
                 workflow.trg_validate(user_id, 'stock.picking', in_picking_id, 'button_confirm', cursor)
+                self.write(cursor, user_id, order.id, {
+                    'out_picking_id' : out_picking_id,
+                    'in_picking_id' : in_picking_id
+                }),
 
             # Check assignement
             picking_pool.action_assign(cursor, user_id, [out_picking_id, in_picking_id])
@@ -352,6 +358,21 @@ class RentOrder(osv.osv):
             if found:
                 result.append((key, name))
 
+        return result
+
+    def get_orders_invoices_ids(self, cursor, user_id, ids, *args):
+
+        """
+        Returns a list of invoices attached to Rent Orders.
+        """
+
+        orders = self.browse(cursor, user_id, ids)
+        result = []
+
+        for order in orders:
+            for invoice in order.invoices_ids:
+                result.append(invoice.id)
+        print 'INV:', result
         return result
 
     def get_end_date(self, cursor, user_id, ids, field_name, arg, context=None):
@@ -482,6 +503,14 @@ class RentOrder(osv.osv):
 
         return [self.get_invoice_between(cursor, user_id, order, order.date_begin_rent, order.rent_duration, 1, 1)]
 
+    def test_have_invoices(self, cursor, user_id, ids, *args):
+
+        """
+        Method called by the workflow to test if the order have invoices.
+        """
+        print len(self.browse(cursor, user_id, ids[0]).invoices_ids) > 0
+        return len(self.browse(cursor, user_id, ids[0]).invoices_ids) > 0
+
     _name = 'rent.order'
     _sql_constraints = []
     _rec_name = 'ref'
@@ -543,6 +572,10 @@ class RentOrder(osv.osv):
             'Fiscal Position applied to taxes and accounts.')),
         'invoices_ids': fields.many2many('account.invoice', 'rent_order_invoices', 'rent_order_id', 'invoice_id',
             _('Invoices'), readonly=True),
+        'out_picking_id' : fields.many2one('stock.picking', _('Output picking id'), help=_(
+            'The picking object which handle Stock->Client moves.')),
+        'in_picking_id' : fields.many2one('stock.picking', _('Input picking id'), help=_(
+            'The picking object which handle Client->Stock moves.')),
         'total' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Untaxed amount"), digits_compute=get_precision('Sale Price')),
         'total_with_taxes' : fields.function(get_totals, multi=True, method=True, type="float",

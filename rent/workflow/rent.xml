@@ -69,5 +69,12 @@
             <field name="act_to" ref="state_cancelled" />
             <field name="signal">on_cancel_clicked</field>
         </record>
+        <record id="ongoing_to_confirmed" model="workflow.transition">
+            <field name="act_from" ref="state_ongoing" />
+            <field name="act_to" ref="state_confirmed" />
+            <field name="condition">not test_have_invoices()</field>
+            <field name="trigger_model">account.invoice</field>
+            <field name="trigger_expr_id">get_orders_invoices_ids()</field>
+        </record>
     </data>
 </openerp>
