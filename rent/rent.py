@@ -172,14 +172,13 @@ class RentOrder(osv.osv):
             'context' : {'form_view_ref' : view_xml_id}
         }
 
-    def action_confirmed(self, cursor, user_id, ids):
+    def _create_moves(self, cursor, user_id, orders_ids):
 
         """
-        This action is called by the workflow actvity 'confirmed'. We create a deliver order for products
-        of type 'consu' or 'stockable'. We also create a receipt order, for when the product will come back.
+        Create the stock moves of the specified orders objects.
         """
 
-        orders = self.browse(cursor, user_id, ids)
+        orders = self.browse(cursor, user_id, orders_ids)
         move_pool, picking_pool, procurment_pool = map(
             self.pool.get, ('stock.move', 'stock.picking', 'procurement.order'))
         workflow = netsvc.LocalService("workflow")
@@ -188,10 +187,13 @@ class RentOrder(osv.osv):
 
             out_picking_id = False
             in_picking_id = False
+
             warehouse_stock_id = order.shop_id.warehouse_id.lot_stock_id.id
-            customer_output_id = order.partner_shipping_address_id.partner_id.property_stock_customer.id
-            procurments_ids = []
-            
+            if order.partner_shipping_address_id.partner_id.property_stock_customer.id:
+                customer_output_id = order.partner_shipping_address_id.partner_id.property_stock_customer.id
+            else:
+                customer_output_id = order.shop_id.warehouse_id.lot_output_id.id
+
             for line in order.rent_line_ids:
 
                 if line.product_id.product_tmpl_id.type not in ('product', 'consu'):
@@ -241,11 +243,8 @@ class RentOrder(osv.osv):
                     'state': 'draft',
                 })
 
-                # We retrieve the default location_dest_id used in the out move. It correspond to
-                # the supplier output location, we will use it as a source for the in move.
-
-
-                # In move: Client -> Stock
+                # In move: Client -> Stock. This move won't be available at creation because products are
+                # not yet at the client. TODO: Make them available when the out move is confirmed.
                 in_move_id = move_pool.create(cursor, user_id, {
                     'name': line.description,
                     'picking_id': in_picking_id,
@@ -269,10 +268,14 @@ class RentOrder(osv.osv):
             # Check assignement
             picking_pool.action_assign(cursor, user_id, [out_picking_id, in_picking_id])
 
-            # And procurments
-            #for procurment_id in  procurments_ids:
-            #    workflow.trg_validate(user_id, 'procurement.order', procurment_id, 'button_confirm', cursor)
+    def action_confirmed(self, cursor, user_id, ids):
 
+        """
+        This action is called by the workflow actvity 'confirmed'. We create a deliver order for products
+        of type 'consu' or 'stockable'. We also create a receipt order, for when the product will come back.
+        """
+
+        self._create_moves(cursor, user_id, ids)
         self.write(cursor, user_id, ids, {'state':'confirmed'})
 
         return True
