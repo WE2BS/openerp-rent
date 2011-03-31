@@ -175,7 +175,9 @@ class RentOrder(osv.osv):
     def _create_moves(self, cursor, user_id, orders_ids):
 
         """
-        Create the stock moves of the specified orders objects.
+        Create the stock moves of the specified orders objects. For each order, two picking are created :
+            - An output picking, to send the product to the customer.
+            - An input picking, to get the products back.
         """
 
         orders = self.browse(cursor, user_id, orders_ids)
@@ -227,7 +229,7 @@ class RentOrder(osv.osv):
                     })
 
                 # Out move: Stock -> Client
-                out_move_id = move_pool.create(cursor, user_id, {
+                move_pool.create(cursor, user_id, {
                     'name': line.description,
                     'picking_id': out_picking_id,
                     'product_id': line.product_id.id,
@@ -245,7 +247,7 @@ class RentOrder(osv.osv):
 
                 # In move: Client -> Stock. This move won't be available at creation because products are
                 # not yet at the client. TODO: Make them available when the out move is confirmed.
-                in_move_id = move_pool.create(cursor, user_id, {
+                move_pool.create(cursor, user_id, {
                     'name': line.description,
                     'picking_id': in_picking_id,
                     'product_id': line.product_id.id,
@@ -450,6 +452,7 @@ class RentOrder(osv.osv):
                 'partner_id' : order.partner_id.id,
                 'address_invoice_id' : order.partner_invoice_address_id.id,
                 'account_id' : order.partner_id.property_account_receivable.id,
+                'fiscal_position' : order.fiscal_position.id,
             }
         )
 
