@@ -15,7 +15,7 @@
                     <field name="partner_id"/>
                     <field name="salesman"/>
                     <field name="state"/>
-                    <field name="date_begin_rent"/>
+                    <field name="date_begin_rent" widget="date"/>
                     <field name="date_end_rent"/>
                 </tree>
             </field>
@@ -83,6 +83,26 @@
                         <button name="on_show_invoices_clicked" type="object" string="Show invoices" states="ongoing" icon="gtk-apply"/>
                     </group>
                 </form>
+            </field>
+        </record>
+
+        <!--
+            Rent Order search view.
+        -->
+        <record model="ir.ui.view" id="rent_order_search_view">
+            <field name="name">rent.order.search.view</field>
+            <field name="model">rent.order</field>
+            <field name="type">search</field>
+            <field name="arch" type="xml">
+                <search string="Rent Orders">
+                    <filter string="Quotation" icon="terp-project" domain="[('state', '=', 'draft')]"/>
+                    <filter string="Ongoing" icon="terp-project" domain="[('state', '=', 'ongoing')]"/>
+                    <filter string="Done" icon="terp-project" domain="[('state', '=', 'done')]"/>
+                    <newline/>
+                    <group string="Group by..." expand="1">
+                        <filter string="Customer" icon="terp-project" context="{'group_by' : 'partner_id'}"/>
+                    </group>
+                </search>
             </field>
         </record>
 
