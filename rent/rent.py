@@ -273,10 +273,12 @@ class RentOrder(osv.osv):
                     'in_picking_id' : in_picking_id
                 }),
 
-            # Check assignement
-            picking_pool.action_assign(cursor, user_id, [out_picking_id, in_picking_id])
+                # Check assignement
+                picking_pool.action_assign(cursor, user_id, [out_picking_id, in_picking_id])
 
-    def action_confirmed(self, cursor, user_id, ids):
+
+
+    def action_generate_moves(self, cursor, user_id, ids):
 
         """
         This action is called by the workflow actvity 'confirmed'. We create a deliver order for products
@@ -284,7 +286,6 @@ class RentOrder(osv.osv):
         """
 
         self._create_moves(cursor, user_id, ids)
-        self.write(cursor, user_id, ids, {'state':'confirmed'})
 
         return True
 
@@ -304,10 +305,7 @@ class RentOrder(osv.osv):
 
             invoices_id = period_function(cursor, user_id, order)
 
-        self.write(cursor, user_id, ids, {
-            'state' : 'ongoing',
-            'invoices_ids' : [(6, 0, invoices_id)]
-        })
+        self.write(cursor, user_id, ids, {'invoices_ids' : [(6, 0, invoices_id)]})
 
         return True
 
@@ -502,8 +500,16 @@ class RentOrder(osv.osv):
         """
         Method called by the workflow to test if the order have invoices.
         """
-        print 'Test have invoices', ids, args
+
         return len(self.browse(cursor, user_id, ids[0]).invoices_ids) > 0
+
+    def test_out_shipping_done(self, cursor, user_id, ids, *args):
+
+        """
+        Called by the workflow. Returns True once the product has been output shipped.
+        """
+
+        return all(order.out_picking_id.state == 'done' for order in self.browse(cursor, user_id, ids))
 
     _name = 'rent.order'
     _sql_constraints = []
@@ -815,8 +821,8 @@ class RentOrderLine(osv.osv):
     }
 
     _sql_constraints = [
-        ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
-        ('valid_price', 'CHECK(unit_price > 0)', _('The price must be superior to 0.'))
+        ('valid_discount', 'check(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
+        ('valid_price', 'check(unit_price > 0)', _('The price must be superior to 0.'))
     ]
 
     _constraints = [

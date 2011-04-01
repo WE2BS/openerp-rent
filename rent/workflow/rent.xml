@@ -19,13 +19,27 @@
             <field name="wkf_id" ref="rent_workflow"/>
             <field name="name">confirmed</field>
             <field name="kind">function</field>
-            <field name="action">action_confirmed()</field>
+            <field name="action">write({'state' : 'confirmed'})</field>
+            <field name="split_mode">OR</field>
         </record>
-        <record id="state_ongoing" model="workflow.activity">
+        <record id="state_invoices" model="workflow.activity">
             <field name="wkf_id" ref="rent_workflow"/>
-            <field name="name">ongoing</field>
+            <field name="name">invoice</field>
             <field name="kind">function</field>
             <field name="action">action_generate_invoices()</field>
+        </record>
+        <record id="state_ship" model="workflow.activity">
+            <field name="wkf_id" ref="rent_workflow"/>
+            <field name="name">ship</field>
+            <field name="kind">function</field>
+            <field name="action">action_generate_moves()</field>
+        </record>
+         <record id="state_ongoing" model="workflow.activity">
+            <field name="wkf_id" ref="rent_workflow"/>
+            <field name="name">ongoing</field>
+             <field name="kind">function</field>
+            <field name="action">write({'state':'ongoing'})</field>
+            <field name="join_mode">AND</field>
         </record>
         <record id="state_done" model="workflow.activity">
             <field name="wkf_id" ref="rent_workflow"/>
@@ -59,22 +73,27 @@
             <field name="act_to" ref="state_cancelled" />
             <field name="signal">on_cancel_clicked</field>
         </record>
-        <record id="confirmed_to_ongoing" model="workflow.transition">
+        <record id="confirmed_to_invoices" model="workflow.transition">
             <field name="act_from" ref="state_confirmed" />
+            <field name="act_to" ref="state_ship" />
+            <field name="condition">True</field>
+        </record>
+        <record id="confirmed_to_ship" model="workflow.transition">
+            <field name="act_from" ref="state_confirmed" />
+            <field name="act_to" ref="state_invoices" />
+            <field name="condition">True</field>
+        </record>
+        <record id="ship_to_ongoing" model="workflow.transition">
+            <field name="act_from" ref="state_ship" />
             <field name="act_to" ref="state_ongoing" />
-            <field name="signal">on_generate_invoices_clicked</field>
+            <field name="trigger_model">stock.picking</field>
+            <field name="trigger_expr_id">[out_picking_id.id]</field>
+            <field name="condition">test_out_shipping_done()</field>
         </record>
-        <record id="ongoing_to_cancel" model="workflow.transition">
-            <field name="act_from" ref="state_ongoing" />
-            <field name="act_to" ref="state_cancelled" />
-            <field name="signal">on_cancel_clicked</field>
-        </record>
-        <record id="ongoing_to_confirmed" model="workflow.transition">
-            <field name="act_from" ref="state_ongoing" />
-            <field name="act_to" ref="state_confirmed" />
-            <field name="condition">not test_have_invoices()</field>
-            <field name="trigger_model">account.invoice</field>
-            <field name="trigger_expr_id">get_orders_invoices_ids()</field>
+        <record id="invoice_to_ongoing" model="workflow.transition">
+            <field name="act_from" ref="state_invoices" />
+            <field name="act_to" ref="state_ongoing" />
+            <field name="condition">True</field>
         </record>
     </data>
 </openerp>
