@@ -372,7 +372,7 @@ class RentOrder(osv.osv):
         for order in orders:
             for invoice in order.invoices_ids:
                 result.append(invoice.id)
-        print 'INV:', result
+
         return result
 
     def get_end_date(self, cursor, user_id, ids, field_name, arg, context=None):
@@ -388,13 +388,7 @@ class RentOrder(osv.osv):
 
             begin = datetime.datetime.strptime(order.date_begin_rent, DEFAULT_SERVER_DATETIME_FORMAT)
             duration = order.rent_duration
-            days = duration
-
-            if order.rent_duration_unity == 'month':
-                days = duration * UNITIES_FACTORS['day']['month']
-            elif order.rent_duration_unity == 'year':
-                days = duration * UNITIES_FACTORS['day']['year']
-
+            days = duration * UNITIES_FACTORS['day'][order.rent_duration_unity]
             end = begin + datetime.timedelta(days=days)
             end = end.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 
@@ -508,7 +502,7 @@ class RentOrder(osv.osv):
         """
         Method called by the workflow to test if the order have invoices.
         """
-        print len(self.browse(cursor, user_id, ids[0]).invoices_ids) > 0
+        print 'Test have invoices', ids, args
         return len(self.browse(cursor, user_id, ids[0]).invoices_ids) > 0
 
     _name = 'rent.order'
@@ -808,7 +802,7 @@ class RentOrderLine(osv.osv):
 
     _sql_constraints = [
         ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
-        ('valid_price', 'CHECK(price > 0)', _('The price must be superior to 0.'))
+        ('valid_price', 'CHECK(unit_price > 0)', _('The price must be superior to 0.'))
     ]
 
     _constraints = [
