@@ -41,7 +41,7 @@ class Company(osv.osv):
             required=True)
     }
     _defaults = {
-        'rent_unity' : 'month'
+        'rent_unity' : 'day'
     }
 
 Company()

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <!--
+            Rent Order - Rtz doesn't use time in renting. We change all the date widgets.
+        -->
+        <record model="ir.ui.view" id="rent_order_rtz_tree_view">
+            <field name="name">rent.order.rtz.tree.view</field>
+            <field name="model">rent.order</field>
+            <field name="inherit_id" ref="rent.rent_order_tree_view"/>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <field name="date_created" position="attributes">
+                    <attribute name="widget">date</attribute>
+                </field>
+                <field name="date_begin_rent" position="attributes">
+                    <attribute name="widget">date</attribute>
+                </field>
+                <field name="date_end_rent" position="attributes">
+                    <attribute name="widget">date</attribute>
+                </field>
+
+            </field>
+        </record>
+        <record model="ir.ui.view" id="rent_order_rtz_form_view">
+            <field name="name">rent.order.rtz.form.view</field>
+            <field name="model">rent.order</field>
+            <field name="inherit_id" ref="rent.rent_order_form_view"/>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <field name="date_created" position="attributes">
+                    <attribute name="widget">date</attribute>
+                </field>
+                <field name="date_begin_rent" position="attributes">
+                    <attribute name="widget">date</attribute>
+                </field>
+                <field name="date_out_shipping" position="attributes">
+                    <attribute name="widget">date</attribute>
+                </field>
+            </field>
+        </record>
+        
+        <!--
+            Rent Order Line
+        -->
+        <record id="rent_order_line_rtz_tree_view" model="ir.ui.view">
+            <field name="name">rent.order.line.rtz.tree.view</field>
+            <field name="model">rent.order.line</field>
+            <field name="inherit_id" ref="rent.rent_order_line_tree_view"/>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <field name="discount" position="before">
+                    <field name="coeff"/>
+                </field>
+            </field>
+        </record>
+        <record id="rent_order_line_rtz_form_view" model="ir.ui.view">
+            <field name="name">rent.order.line.rtz.form.view</field>
+            <field name="model">rent.order.line</field>
+            <field name="type">form</field>
+            <field name="inherit_id" ref="rent.rent_order_line_form_view"/>
+            <field name="arch" type="xml">
+                <field name="discount" position="before">
+                    <field name="coeff"/>
+                </field>
+            </field>
+        </record>
+    </data>
+</openerp>
