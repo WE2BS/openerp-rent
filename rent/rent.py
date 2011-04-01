@@ -237,7 +237,7 @@ class RentOrder(osv.osv):
                     'picking_id': out_picking_id,
                     'product_id': line.product_id.id,
                     'date': time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
-                    'date_expected': order.date_begin_rent,
+                    'date_expected': order.date_out_shipping,
                     'product_qty': line.quantity,
                     'product_uom': line.product_id_uom.id,
                     'product_uos' : line.product_id_uom.id,
