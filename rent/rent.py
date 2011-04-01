@@ -566,6 +566,9 @@ class RentOrder(osv.osv):
             'Fiscal Position applied to taxes and accounts.')),
         'invoices_ids': fields.many2many('account.invoice', 'rent_order_invoices', 'rent_order_id', 'invoice_id',
             _('Invoices'), readonly=True),
+        'date_out_shipping' : fields.datetime(_('Shipping date'), readonly=True, required=True,
+            states={'draft': [('readonly', False)]}, help=_(
+            'Date of the shipping.')),
         'out_picking_id' : fields.many2one('stock.picking', _('Output picking id'), help=_(
             'The picking object which handle Stock->Client moves.')),
         'in_picking_id' : fields.many2one('stock.picking', _('Input picking id'), help=_(
@@ -589,6 +592,8 @@ class RentOrder(osv.osv):
             lambda *args, **kwargs: time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
         'date_begin_rent':
             lambda *args, **kwargs: time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
+        'date_out_shipping':
+            lambda *args, **kwargs: time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
         'state':
             'draft',
         'salesman': # Default salesman is the curent user
@@ -607,10 +612,10 @@ class RentOrder(osv.osv):
 
     _sql_constraints = [
         ('ref_uniq', 'UNIQUE(ref)', _('Rent Order reference must be unique !')),
-        ('valid_created_date', 'CHECK(date_created >= CURRENT_DATE)', _('The date must be today of later.')),
-        ('valid_begin_date', 'CHECK(date_begin_rent >= CURRENT_DATE)', _('The begin date must be today or later.')),
-        ('begin_after_create', 'CHECK(date_begin_rent >= date_created)', _('The begin date must later than the order date.')),
-        ('valid_discount', 'CHECK(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
+        ('valid_created_date', 'check(date_created >= CURRENT_DATE)', _('The date must be today of later.')),
+        ('valid_begin_date', 'check(date_begin_rent >= CURRENT_DATE)', _('The begin date must be today or later.')),
+        ('begin_after_create', 'check(date_begin_rent >= date_created)', _('The begin date must later than the order date.')),
+        ('valid_discount', 'check(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
     ]
 
 # We register invoice periods for Rent orders.

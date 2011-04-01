@@ -15,7 +15,7 @@
                     <field name="partner_id"/>
                     <field name="salesman"/>
                     <field name="state"/>
-                    <field name="date_begin_rent" widget="date"/>
+                    <field name="date_begin_rent"/>
                     <field name="date_end_rent"/>
                 </tree>
             </field>
@@ -48,8 +48,9 @@
                                    domain="[('partner_id', '=', partner_id)]"/>
                             <field name="partner_invoice_address_id" groups="base.group_extended"
                                    domain="[('partner_id', '=', partner_id)]"/>
-                            <group colspan="4" col="8">
-                                <field name="date_begin_rent"/>
+                            <field name="date_begin_rent"/>
+                            <field name="date_out_shipping"/>
+                            <group colspan="4" col="6">
                                 <field name="rent_duration"/>
                                 <field name="rent_duration_unity"/>
                                 <field name="rent_invoice_period"/>
@@ -96,11 +97,16 @@
             <field name="arch" type="xml">
                 <search string="Rent Orders">
                     <filter string="Quotation" icon="terp-project" domain="[('state', '=', 'draft')]"/>
+                    <filter string="Confirmed" icon="terp-project" domain="[('state', '=', 'confirmed')]"/>
                     <filter string="Ongoing" icon="terp-project" domain="[('state', '=', 'ongoing')]"/>
-                    <filter string="Done" icon="terp-project" domain="[('state', '=', 'done')]"/>
+                    <separator orientation="vertical"/>
+                    <field name="ref" select="1"/>
+                    <field name="partner_id" select="1"/>
+                    <field name="date_begin_rent" select="1"/>
                     <newline/>
                     <group string="Group by..." expand="1">
                         <filter string="Customer" icon="terp-project" context="{'group_by' : 'partner_id'}"/>
+                        <filter string="Salesman" icon="terp-project" context="{'group_by' : 'salesman'}"/>
                     </group>
                 </search>
             </field>
