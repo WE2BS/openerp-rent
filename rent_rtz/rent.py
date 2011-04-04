@@ -25,6 +25,12 @@ class RentOrderRtzLine(osv.osv):
     # Inherit the rent.order.line object to add a special "Coefficient" field.
     # This field is used to compute the price on the line.
 
+    def get_rent_price(self, line, order_duration, order_unity, product_price_unity, product_price_factor):
+
+        if line.product_type != 'rent':
+            return 0.0
+        return line.unit_price * product_price_factor * line.coeff
+
     _inherit = 'rent.order.line'
     _name = 'rent.order.line'
     

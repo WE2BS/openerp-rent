@@ -662,6 +662,26 @@ class RentOrderLine(osv.osv):
 
         return {'value' : result}
 
+    def get_order_price(self, line):
+
+        """
+        Returns the order price for the line.
+        """
+
+        if line.product_type == 'rent':
+            return 0.0
+        return line.unit_price
+        
+    def get_rent_price(self, line, order_duration, order_unity, product_price_unity, product_price_factor):
+
+        """
+        Returns the rent price for the line.
+        """
+
+        if line.product_type != 'rent':
+            return 0.0
+        return line.unit_price * product_price_factor * order_duration
+
     def get_prices(self, cursor, user_id, ids, fields_name, arg, context):
 
         """
@@ -684,27 +704,16 @@ class RentOrderLine(osv.osv):
 
             product_price_factor = UNITIES_FACTORS[product_price_unity][order_unity]
 
-            if line.product_type == 'rent':
-                # The factor is used to convert the product price unity into the order price unity.
-                # Example:
-                #   UNITIES_FACTORS['day']['year'] will return a factor to convert days to years
-                #   (365 in this case). So, to convert a price which is defined per day in price per year,
-                #   you have to multiply the price per 365.
-                rent_price = line.unit_price * product_price_factor * order_duration
-                order_price = 0
-                line_price = rent_price * line.quantity
-                real_price = rent_price
-            else:
-                rent_price = 0
-                order_price = line.unit_price
-                line_price = order_price * line.quantity
-                real_price = order_price
+            rent_price = self.get_rent_price(line, order_duration, order_unity,
+                product_price_unity, product_price_factor)
+            order_price = self.get_order_price(line)
+            line_price = rent_price or order_price
 
             result[line.id] = {
                 'rent_price' : rent_price,
                 'order_price' : order_price,
                 'line_price' : line_price * (1-line.discount/100.0),
-                'real_price' : real_price,
+                'real_price' : line_price,
             }
 
         return result
