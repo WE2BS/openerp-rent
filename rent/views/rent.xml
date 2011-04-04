@@ -15,8 +15,13 @@
                     <field name="partner_id"/>
                     <field name="salesman"/>
                     <field name="state"/>
+                    <field name="invoiced_rate" widget="progressbar"/>
                     <field name="date_begin_rent"/>
                     <field name="date_end_rent"/>
+                    <field name="total_with_discount" string="Untaxed Total" sum="Total"/>
+                    <field name="total_with_taxes_with_discount" string="Total"/>
+                    <button name="on_show_invoices_clicked" type="object"  icon="terp-account"
+                        string="Show invoices" states="ongoing,done,confirmed"/>
                 </tree>
             </field>
         </record>
@@ -76,12 +81,11 @@
                             <field name="notes" colspan="4" nolabel="1"/>
                         </page>
                     </notebook>
-                    <group col="6">
+                    <group col="5">
                         <field name="state"/>
                         <button name="on_draft_clicked" string="Go back to draft" states="cancelled" type="object" icon="gtk-convert"/>
                         <button name="on_cancel_clicked" string="Cancel" states="draft,confirmed" icon="gtk-cancel"/>
                         <button name="on_confirm_clicked" string="Confirm" states="draft" icon="gtk-ok"/>
-                        <button name="on_show_invoices_clicked" type="object" string="Show invoices" states="ongoing" icon="gtk-apply"/>
                     </group>
                 </form>
             </field>

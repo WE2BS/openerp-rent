@@ -160,8 +160,8 @@ class RentOrder(osv.osv):
         view_id = view_id and view_id[1] or False
         view_xml_id = self.pool.get('ir.ui.view').get_xml_id(cursor, user_id, [view_id])[view_id]
 
-        return {
-            'name': 'Customer Invoices',
+        action = {
+            'name': '%s Invoice(s)' % order.ref,
             'view_type': 'form',
             'view_mode': 'tree,form',
             'res_model': 'account.invoice',
@@ -171,6 +171,12 @@ class RentOrder(osv.osv):
             'domain': [('origin', '=', order.ref)],
             'context' : {'form_view_ref' : view_xml_id}
         }
+
+        if len(order.invoices_ids) == 1:
+            action['res_id'] = order.invoices_ids[0].id
+            action['view_mode'] = 'form,tree'
+        
+        return action
 
     def action_generate_out_move(self, cursor, user_id, orders_ids):
 
@@ -417,6 +423,25 @@ class RentOrder(osv.osv):
 
         return result
 
+    def get_invoiced_rate(self, cursor, user_id, ids, fields_name, arg, context=None):
+
+        """
+        Returns the percentage of invoices which have been confirmed.
+        """
+
+        orders = self.browse(cursor, user_id, ids, context=context)
+        result = {}
+
+        for order in orders:
+            invoices_count = len(order.invoices_ids)
+            if not invoices_count:
+                result[order.id] = 0
+                continue
+            invoices_confirmed = len(
+                [i for i in order.invoices_ids if i.state in ('open', 'paid')])
+            result[order.id] = invoices_confirmed / invoices_count * 100.0
+        return result
+
     def get_totals(self, cursor, user_id, ids, fields_name, arg, context=None):
 
         """
@@ -551,10 +576,13 @@ class RentOrder(osv.osv):
     _order = 'date_created DESC,ref DESC'
 
     _columns = {
-        'state' : fields.selection(STATES, _('State'), readonly=True, help=_('Gives the state of the rent order.')),
+        'state' : fields.selection(STATES, _('State'), readonly=True, help=_(
+            'Gives the state of the rent order :\n'
+            '- Quotation\n-Confirmed\n-Ongoing (Products have been shipped)\n'
+            '- Done (Products have been get back)')),
         'ref' : fields.char(_('Reference'), size=128, required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
-            'The reference is a unique identifier that identify this order.')),
+            'The reference is a unique identifier that identify this order. ')),
         'date_created' : fields.datetime(_('Date'), readonly=True, required=True,
             states={'draft': [('readonly', False)]}, help=_(
             'Date of the creation of this order.')),
@@ -605,6 +633,8 @@ class RentOrder(osv.osv):
             'Fiscal Position applied to taxes and accounts.')),
         'invoices_ids': fields.many2many('account.invoice', 'rent_order_invoices', 'rent_order_id', 'invoice_id',
             _('Invoices'), readonly=True),
+        'invoiced_rate' : fields.function(get_invoiced_rate, string=_('Invoiced'), help=_(
+            'Invoiced percent, calculated on the numver if invoices confirmed.'), method=True),
         'date_out_shipping' : fields.datetime(_('Shipping date'), readonly=True, required=True,
             states={'draft': [('readonly', False)]}, help=_(
             'Date of the shipping.')),
