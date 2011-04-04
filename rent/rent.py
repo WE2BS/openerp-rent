@@ -387,19 +387,18 @@ class RentOrder(osv.osv):
 
         return result
 
-    def get_orders_invoices_ids(self, cursor, user_id, ids, *args):
+    def get_order_lines(self, cursor, user_id, ids):
 
         """
-        Returns a list of invoices attached to Rent Orders.
+        Returns lines ids associated to this order.
         """
 
-        orders = self.browse(cursor, user_id, ids)
-        result = []
+        order = self.browse(cursor, user_id, ids)
+        result = {}
 
         for order in orders:
-            for invoice in order.invoices_ids:
-                result.append(invoice.id)
-
+            result[order.id] = [line.id for line in order.rent_line_ids]
+        
         return result
 
     def get_end_date(self, cursor, user_id, ids, field_name, arg, context=None):
@@ -643,17 +642,41 @@ class RentOrder(osv.osv):
         'in_picking_id' : fields.many2one('stock.picking', _('Input picking id'), help=_(
             'The picking object which handle Client->Stock moves.')),
         'total' : fields.function(get_totals, multi=True, method=True, type="float",
-            string=_("Untaxed amount"), digits_compute=get_precision('Sale Price')),
+            string=_("Untaxed amount"), digits_compute=get_precision('Sale Price'),
+            store={
+                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order' : (lambda *a: a[3], None, 10),
+            }),
         'total_with_taxes' : fields.function(get_totals, multi=True, method=True, type="float",
-            string=_("Total"), digits_compute=get_precision('Sale Price')),
+            string=_("Total"), digits_compute=get_precision('Sale Price'),
+            store={
+                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order' : (lambda *a: a[3], None, 10),
+            }),
         'total_taxes' : fields.function(get_totals, multi=True, method=True, type="float",
-            string=_("Taxes"), digits_compute=get_precision('Sale Price')),
+            string=_("Taxes"), digits_compute=get_precision('Sale Price'),
+            store={
+                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order' : (lambda *a: a[3], None, 10),
+            }),
         'total_with_discount' : fields.function(get_totals, multi=True, method=True, type="float",
-            string=_("Untaxed amount (with discount)"), digits_compute=get_precision('Sale Price')),
+            string=_("Untaxed amount (with discount)"), digits_compute=get_precision('Sale Price'),
+            store={
+                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order' : (lambda *a: a[3], None, 10),
+            }),
         'total_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float",
-            string=_("Taxes (with discount)"), digits_compute=get_precision('Sale Price')),
+            string=_("Taxes (with discount)"), digits_compute=get_precision('Sale Price'),
+            store={
+                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order' : (lambda *a: a[3], None, 10),
+            }),
         'total_with_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float",
-            string=_("Total (with discount)"), digits_compute=get_precision('Sale Price')),
+            string=_("Total (with discount)"), digits_compute=get_precision('Sale Price'),
+            store={
+                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order' : (lambda *a: a[3], None, 10),
+            }),
     }
 
     _defaults = {
