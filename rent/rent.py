@@ -529,8 +529,17 @@ class RentOrder(osv.osv):
         Called by the workflow. Returns True once the product has been output shipped.
         """
         
-        order = self.browse(cursor, user_id, ids[0])
-        return all(line.state == 'done' for line in order.out_picking_id.move_lines)
+        return all(line.state == 'done' for line in self.browse(
+            cursor, user_id, ids[0]).out_picking_id.move_lines)
+    
+    def test_in_shipping_done(self, cursor, user_id, ids, *args):
+
+        """
+        Called by the workflow. Returns True once the product has been input shipped.
+        """
+        
+        return all(line.state == 'done' for line in self.browse(
+            cursor, user_id, ids[0]).in_picking_id.move_lines)
 
     _name = 'rent.order'
     _sql_constraints = []

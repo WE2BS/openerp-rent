@@ -76,12 +76,11 @@
                             <field name="notes" colspan="4" nolabel="1"/>
                         </page>
                     </notebook>
-                    <group col="7">
+                    <group col="6">
                         <field name="state"/>
                         <button name="on_draft_clicked" string="Go back to draft" states="cancelled" type="object" icon="gtk-convert"/>
-                        <button name="on_cancel_clicked" string="Cancel" states="draft,confirmed,ongoing" icon="gtk-cancel"/>
+                        <button name="on_cancel_clicked" string="Cancel" states="draft,confirmed" icon="gtk-cancel"/>
                         <button name="on_confirm_clicked" string="Confirm" states="draft" icon="gtk-ok"/>
-                        <button name="on_generate_invoices_clicked" string="Generate invoices" states="confirmed" icon="gtk-apply"/>
                         <button name="on_show_invoices_clicked" type="object" string="Show invoices" states="ongoing" icon="gtk-apply"/>
                     </group>
                 </form>
