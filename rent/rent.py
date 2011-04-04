@@ -172,7 +172,7 @@ class RentOrder(osv.osv):
             'context' : {'form_view_ref' : view_xml_id}
         }
 
-    def _create_moves(self, cursor, user_id, orders_ids):
+    def action_generate_out_move(self, cursor, user_id, orders_ids):
 
         """
         Create the stock moves of the specified orders objects. For each order, two picking are created :
@@ -181,8 +181,8 @@ class RentOrder(osv.osv):
         """
 
         orders = self.browse(cursor, user_id, orders_ids)
-        move_pool, picking_pool, procurment_pool = map(
-            self.pool.get, ('stock.move', 'stock.picking', 'procurement.order'))
+        move_pool, picking_pool = map(
+            self.pool.get, ('stock.move', 'stock.picking'))
         workflow = netsvc.LocalService("workflow")
 
         for order in orders:
@@ -220,17 +220,6 @@ class RentOrder(osv.osv):
                         'company_id' : order.company_id.id,
                     })
 
-                    in_picking_id = picking_pool.create(cursor, user_id, {
-                        'origin' : order.ref,
-                        'type' : 'in',
-                        'state' : 'auto',
-                        'move_type' : 'one',
-                        'invoice_state' : 'none',
-                        'date' : time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
-                        'address_id' : order.partner_shipping_address_id.id,
-                        'company_id' : order.company_id.id,
-                    })
-
                 # Out move: Stock -> Client
                 move_pool.create(cursor, user_id, {
                     'name': line.description,
@@ -248,45 +237,65 @@ class RentOrder(osv.osv):
                     'state': 'draft',
                 })
 
-                # In move: Client -> Stock. This move won't be available at creation because products are
-                # not yet at the client. TODO: Make them available when the out move is confirmed.
+            # Confirm picking orders
+            if out_picking_id:
+                workflow.trg_validate(user_id, 'stock.picking',
+                    out_picking_id, 'button_confirm', cursor)
+                self.write(cursor, user_id, order.id,
+                    {'out_picking_id' : out_picking_id}),
+
+                # Check assignement (TODO: This should be optional)
+                picking_pool.action_assign(cursor, user_id, [out_picking_id])
+
+        return True
+
+    def action_ongoing(self, cursor, user_id, ids):
+
+        """
+        We switch to ongoing state when the out picking has been confirmed,
+        and invoices have been generated. We have to generate the input picking.
+        """
+
+        orders = self.browse(cursor, user_id, ids)
+        picking_pool, move_pool = map(
+            self.pool.get, ('stock.picking', 'stock.move'))
+        workflow = netsvc.LocalService("workflow")
+
+        for order in orders:
+            in_picking_id = picking_pool.create(cursor, user_id, {
+                'origin' : order.out_picking_id.origin,
+                'type' : 'in',
+                'state' : 'auto',
+                'move_type' : 'one',
+                'invoice_state' : 'none',
+                'date' : time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
+                'address_id' : order.partner_shipping_address_id.id,
+                'company_id' : order.company_id.id,
+            })
+            for line in order.out_picking_id.move_lines:
                 move_pool.create(cursor, user_id, {
-                    'name': line.description,
+                    'name': line.name,
                     'picking_id': in_picking_id,
                     'product_id': line.product_id.id,
                     'date': time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
                     'date_expected': order.date_end_rent,
-                    'product_qty': line.quantity,
-                    'product_uom': line.product_id_uom.id,
-                    'address_id': order.partner_shipping_address_id.id,
-                    'location_id': customer_output_id,
-                    'location_dest_id': warehouse_stock_id,
+                    'product_qty': line.product_qty,
+                    'product_uom': line.product_uom.id,
+                    'product_uos' : line.product_uos.id,
+                    'product_uos_qty' : line.product_uos_qty,
+                    'address_id': line.address_id.id,
+                    'location_id': line.location_dest_id.id,
+                    'location_dest_id' : line.location_id.id,
                     'state': 'draft',
                 })
-
-            # Confirm picking orders
-            if out_picking_id and in_picking_id:
-                workflow.trg_validate(user_id, 'stock.picking', out_picking_id, 'button_confirm', cursor)
-                workflow.trg_validate(user_id, 'stock.picking', in_picking_id, 'button_confirm', cursor)
-                self.write(cursor, user_id, order.id, {
-                    'out_picking_id' : out_picking_id,
-                    'in_picking_id' : in_picking_id
-                }),
-
-                # Check assignement
-                picking_pool.action_assign(cursor, user_id, [out_picking_id, in_picking_id])
-
-
-
-    def action_generate_moves(self, cursor, user_id, ids):
-
-        """
-        This action is called by the workflow actvity 'confirmed'. We create a deliver order for products
-        of type 'consu' or 'stockable'. We also create a receipt order, for when the product will come back.
-        """
-
-        self._create_moves(cursor, user_id, ids)
-
+            
+            self.write(cursor, user_id, order.id,
+                {'in_picking_id' : in_picking_id, 'state' : 'ongoing'})
+            
+            # Confirm the picking
+            workflow.trg_validate(user_id, 'stock.picking',
+                in_picking_id, 'button_confirm', cursor)
+        
         return True
 
     def action_generate_invoices(self, cursor, user_id, ids):

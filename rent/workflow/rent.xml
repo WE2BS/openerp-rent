@@ -32,13 +32,13 @@
             <field name="wkf_id" ref="rent_workflow"/>
             <field name="name">ship</field>
             <field name="kind">function</field>
-            <field name="action">action_generate_moves()</field>
+            <field name="action">action_generate_out_move()</field>
         </record>
          <record id="state_ongoing" model="workflow.activity">
             <field name="wkf_id" ref="rent_workflow"/>
             <field name="name">ongoing</field>
              <field name="kind">function</field>
-            <field name="action">write({'state':'ongoing'})</field>
+            <field name="action">action_ongoing()</field>
             <field name="join_mode">AND</field>
         </record>
         <record id="state_done" model="workflow.activity">
