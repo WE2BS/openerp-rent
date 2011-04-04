@@ -332,6 +332,7 @@ class RentOrder(osv.osv):
         """
         If you cancel the order before invoices have been generated, it's ok.
         Else, you can cancel only if invoices haven't been confirmed yet.
+        You can't cancel an order which have confirmed picking.
         """
 
         orders = self.browse(cursor, user_id, ids)
@@ -387,19 +388,14 @@ class RentOrder(osv.osv):
 
         return result
 
-    def get_order_lines(self, cursor, user_id, ids):
+    def get_order_from_lines(self, cursor, user_id, ids, context=None):
 
         """
         Returns lines ids associated to this order.
         """
 
-        order = self.browse(cursor, user_id, ids)
-        result = {}
-
-        for order in orders:
-            result[order.id] = [line.id for line in order.rent_line_ids]
-        
-        return result
+        lines = self.pool.get('rent.order.line').browse(cursor, user_id, ids)
+        return [line.order_id.id for line in lines]
 
     def get_end_date(self, cursor, user_id, ids, field_name, arg, context=None):
 
@@ -598,26 +594,26 @@ class RentOrder(osv.osv):
         'rent_invoice_period' : fields.selection(get_invoice_periods, _('Invoice Period'),
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'Period between invoices')),
-        'salesman' : fields.many2one('res.users', _('Salesman'),
+        'salesman' : fields.many2one('res.users', _('Salesman'), ondelete='SET NULL',
             readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'The salesman who handle this order, optional.')),
         'shop_id': fields.many2one('sale.shop', 'Shop', required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
-            'The shop where this order was created.')),
+            'The shop where this order was created.'), ondelete='RESTRICT'),
         'company_id': fields.related('shop_id', 'company_id', type='many2one', relation='res.company',
             string=_('Company'), store=True, readonly=True),
         'partner_id': fields.many2one('res.partner', _('Customer'), required=True, change_default=True,
             domain=[('customer', '=', 'True')], context={'search_default_customer' : True},
-            readonly=True, states={'draft' : [('readonly', False)]}, help=_(
+            readonly=True, states={'draft' : [('readonly', False)]}, ondelete='RESTRICT', help=_(
             'Select a customer. Only partners marked as customer will be shown.')),
         'partner_invoice_address_id': fields.many2one('res.partner.address', _('Invoice Address'), readonly=True,
-            required=True, states={'draft': [('readonly', False)]}, help=_(
+            required=True, states={'draft': [('readonly', False)]}, ondelete='RESTRICT', help=_(
             'Invoice address for current Rent Order.')),
         'partner_order_address_id': fields.many2one('res.partner.address', _('Ordering Address'), readonly=True,
-            required=True, states={'draft': [('readonly', False)]}, help=_(
+            required=True, states={'draft': [('readonly', False)]}, ondelete='RESTRICT', help=_(
             'The name and address of the contact who requested the order or quotation.')),
         'partner_shipping_address_id': fields.many2one('res.partner.address', 'Shipping Address', readonly=True,
-            required=True, states={'draft': [('readonly', False)]}, help=_(
+            required=True, states={'draft': [('readonly', False)]}, ondelete='RESTRICT', help=_(
             'Shipping address for current rent order.')),
         'rent_line_ids' : fields.one2many('rent.order.line', 'order_id', _('Order Lines'), readonly=True,
             states={'draft': [('readonly', False)]}, help=_(
@@ -628,7 +624,7 @@ class RentOrder(osv.osv):
             readonly=True, states={'draft': [('readonly', False)]}, help=_(
             'Apply a global discount to this order.')),
         'fiscal_position' : fields.many2one('account.fiscal.position', _('Fiscal Position'), readonly=True,
-            states={'draft': [('readonly', False)]}, help=_(
+            states={'draft': [('readonly', False)]}, ondelete='SET NULL', help=_(
             'Fiscal Position applied to taxes and accounts.')),
         'invoices_ids': fields.many2many('account.invoice', 'rent_order_invoices', 'rent_order_id', 'invoice_id',
             _('Invoices'), readonly=True),
@@ -638,43 +634,43 @@ class RentOrder(osv.osv):
             states={'draft': [('readonly', False)]}, help=_(
             'Date of the shipping.')),
         'out_picking_id' : fields.many2one('stock.picking', _('Output picking id'), help=_(
-            'The picking object which handle Stock->Client moves.')),
+            'The picking object which handle Stock->Client moves.'), ondelete='RESTRICT'),
         'in_picking_id' : fields.many2one('stock.picking', _('Input picking id'), help=_(
-            'The picking object which handle Client->Stock moves.')),
+            'The picking object which handle Client->Stock moves.'), ondelete='RESTRICT'),
         'total' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Untaxed amount"), digits_compute=get_precision('Sale Price'),
             store={
-                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order.line' : (get_order_from_lines, None, 10),
                 'rent.order' : (lambda *a: a[3], None, 10),
             }),
         'total_with_taxes' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Total"), digits_compute=get_precision('Sale Price'),
             store={
-                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order.line' : (get_order_from_lines, None, 10),
                 'rent.order' : (lambda *a: a[3], None, 10),
             }),
         'total_taxes' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Taxes"), digits_compute=get_precision('Sale Price'),
             store={
-                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order.line' : (get_order_from_lines, None, 10),
                 'rent.order' : (lambda *a: a[3], None, 10),
             }),
         'total_with_discount' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Untaxed amount (with discount)"), digits_compute=get_precision('Sale Price'),
             store={
-                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order.line' : (get_order_from_lines, None, 10),
                 'rent.order' : (lambda *a: a[3], None, 10),
             }),
         'total_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Taxes (with discount)"), digits_compute=get_precision('Sale Price'),
             store={
-                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order.line' : (get_order_from_lines, None, 10),
                 'rent.order' : (lambda *a: a[3], None, 10),
             }),
         'total_with_taxes_with_discount' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Total (with discount)"), digits_compute=get_precision('Sale Price'),
             store={
-                'rent.order.line' : (get_order_lines, None, 10),
+                'rent.order.line' : (get_order_from_lines, None, 10),
                 'rent.order' : (lambda *a: a[3], None, 10),
             }),
     }
@@ -703,7 +699,7 @@ class RentOrder(osv.osv):
     }
 
     _sql_constraints = [
-        ('ref_uniq', 'UNIQUE(ref)', _('Rent Order reference must be unique !')),
+        ('ref_uniq', 'unique(ref)', _('Rent Order reference must be unique !')),
         ('valid_created_date', 'check(date_created >= CURRENT_DATE)', _('The date must be today of later.')),
         ('valid_begin_date', 'check(date_begin_rent >= CURRENT_DATE)', _('The begin date must be today or later.')),
         ('begin_after_create', 'check(date_begin_rent >= date_created)', _('The begin date must later than the order date.')),
@@ -712,7 +708,7 @@ class RentOrder(osv.osv):
 
 # We register invoice periods for Rent orders.
 # See the doc of register_invoice_period for more informations.
-RentOrder.register_invoice_period('once', _('One invoice (at end)'), 'get_invoices_for_once_period')
+RentOrder.register_invoice_period('once', _('Once'), 'get_invoices_for_once_period')
 #RentOrder.register_invoice_period('monthly', _('Monthly'))
 #RentOrder.register_invoice_period('quaterly', _('Quaterly'))
 #RentOrder.register_invoice_period('yearly', _('Yearly'))
