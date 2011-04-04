@@ -55,7 +55,8 @@
                                 <field name="rent_duration_unity"/>
                                 <field name="rent_invoice_period"/>
                             </group>
-                            <field name="rent_line_ids" nolabel="1" colspan="4"/>
+                            <field name="rent_line_ids" nolabel="1" colspan="4"
+                                context="{'duration' : rent_duration}"/>
                             <group colspan="4" col="6">
                                 <field name="total"/>
                                 <field name="total_taxes"/>
