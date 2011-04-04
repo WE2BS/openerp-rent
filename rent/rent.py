@@ -321,6 +321,7 @@ class RentOrder(osv.osv):
         for order in orders:
 
             if order.state == 'ongoing':
+                # Check invoices
                 invoices_ids = []
                 for invoice in order.invoices_ids:
                     if invoice.state not in ('draft', 'cancel'):
@@ -328,9 +329,19 @@ class RentOrder(osv.osv):
                             _("This order have confirmed invoice, and can't be deleted right now."))
                     invoices_ids.append(invoice.id)
 
-                # Else, we just remove the invoices
-                self.pool.get('account.invoice').unlink(cursor, user_id, invoices_ids)
+                # Check stock.picking objects
+                shipping_exption = osv.except_osv(_("You can't cancel this order."),
+                    _("This order have confirmed shipping orders !"))
+                if order.out_picking_id.id and order.out_picking_id.state == 'done':
+                    raise shipping_exption
+                if order.in_picking_id.id and order.in_picking_id.state == 'done':
+                    raise shipping_exption
 
+                # Remove objects
+                self.pool.get('account.invoice').unlink(cursor, user_id, invoices_ids)
+                self.pool.get('stock.picking').unlink(
+                    cursor, user_id, [order.out_picking_id.id, order.in_picking_id.id])
+                
             self.write(cursor, user_id, ids, {'state':'cancelled'})
 
         return True
@@ -508,8 +519,9 @@ class RentOrder(osv.osv):
         """
         Called by the workflow. Returns True once the product has been output shipped.
         """
-
-        return all(order.out_picking_id.state == 'done' for order in self.browse(cursor, user_id, ids))
+        
+        order = self.browse(cursor, user_id, ids[0])
+        return all(line.state == 'done' for line in order.out_picking_id.move_lines)
 
     _name = 'rent.order'
     _sql_constraints = []

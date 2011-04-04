@@ -86,14 +86,19 @@
         <record id="ship_to_ongoing" model="workflow.transition">
             <field name="act_from" ref="state_ship" />
             <field name="act_to" ref="state_ongoing" />
-            <field name="trigger_model">stock.picking</field>
-            <field name="trigger_expr_id">[out_picking_id.id]</field>
+            <field name="trigger_model">stock.move</field>
+            <field name="trigger_expr_id">[line.id for line in out_picking_id.move_lines]</field>
             <field name="condition">test_out_shipping_done()</field>
         </record>
         <record id="invoice_to_ongoing" model="workflow.transition">
             <field name="act_from" ref="state_invoices" />
             <field name="act_to" ref="state_ongoing" />
             <field name="condition">True</field>
+        </record>
+        <record id="ongoing_to_cancel" model="workflow.transition">
+            <field name="act_from" ref="state_ongoing" />
+            <field name="act_to" ref="state_cancelled" />
+            <field name="signal">on_cancel_clicked</field>
         </record>
     </data>
 </openerp>
