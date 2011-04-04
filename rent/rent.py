@@ -295,6 +295,9 @@ class RentOrder(osv.osv):
             # Confirm the picking
             workflow.trg_validate(user_id, 'stock.picking',
                 in_picking_id, 'button_confirm', cursor)
+
+            # Check assignement (TODO: This should be optional)
+            picking_pool.action_assign(cursor, user_id, [in_picking_id])
         
         return True
 
