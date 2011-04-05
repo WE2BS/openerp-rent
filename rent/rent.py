@@ -536,7 +536,8 @@ class RentOrder(osv.osv):
         Generates only one invoice (at the end of the rent).
         """
 
-        return [self.get_invoice_between(cursor, user_id, order, order.date_begin_rent, order.rent_duration, 1, 1)]
+        return [self.get_invoice_between(cursor, user_id, order,
+            order.date_begin_rent, order.rent_duration, 1, 1)]
 
     def test_have_invoices(self, cursor, user_id, ids, *args):
 
@@ -552,8 +553,9 @@ class RentOrder(osv.osv):
         Called by the workflow. Returns True once the product has been output shipped.
         """
         
-        return all(line.state == 'done' for line in self.browse(
-            cursor, user_id, ids[0]).out_picking_id.move_lines)
+        lines = self.browse(cursor, user_id, ids[0]).out_picking_id.move_lines or []
+
+        return all(line.state == 'done' for line in lines)
     
     def test_in_shipping_done(self, cursor, user_id, ids, *args):
 
@@ -637,6 +639,8 @@ class RentOrder(osv.osv):
             'The picking object which handle Stock->Client moves.'), ondelete='RESTRICT'),
         'in_picking_id' : fields.many2one('stock.picking', _('Input picking id'), help=_(
             'The picking object which handle Client->Stock moves.'), ondelete='RESTRICT'),
+        'description' : fields.char(_('Object'), size=255, help=_(
+            'A small description of the rent order. Used in the report.')),
         'total' : fields.function(get_totals, multi=True, method=True, type="float",
             string=_("Untaxed amount"), digits_compute=get_precision('Sale Price'),
             store={

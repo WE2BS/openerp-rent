@@ -60,18 +60,22 @@
                                 <field name="rent_duration_unity"/>
                                 <field name="rent_invoice_period"/>
                             </group>
+                            <field name="description" colspan="4"/>
                             <field name="rent_line_ids" nolabel="1" colspan="4"
                                 context="{'duration' : rent_duration}"/>
-                            <group colspan="4" col="6">
+                            <group colspan="4" col="7">
                                 <field name="total"/>
                                 <field name="total_taxes"/>
                                 <field name="total_with_taxes"/>
+                                <!--Disabled for now, until we find a good way to implement
+                                    global discount in invoices !
                                 <field name="total_with_discount"/>
                                 <field name="total_taxes_with_discount"/>
                                 <field name="total_with_taxes_with_discount"/>
                                 <field name="discount"/>
                                 <label string="Click on this button to refresh prices ->" colspan="2"/>
-                                <button name="on_compute_clicked" string="Compute" icon="gtk-execute" colspan="2"/>
+                                -->
+                                <button name="on_compute_clicked" string="Compute" icon="gtk-execute"/>
                             </group>
                         </page>
                         <page string="Invoices">
