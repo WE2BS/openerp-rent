@@ -86,4 +86,8 @@ class RentOrderRtzLine(osv.osv):
         'coeff' : get_default_coeff,
     }
 
+    _sql_constraints = [
+        ('valid_coeff', 'check(coeff > 0)', _('The coefficient must be superior to 0.')),
+    ]
+
 RentOrderRtzLine()
