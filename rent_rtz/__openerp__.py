@@ -30,7 +30,7 @@
     "depends": ["rent"],
     "init_xml": [],
     "demo_xml": [],
-    "update_xml": ['views/rent.xml'],
+    "update_xml": ['views/rent.xml', 'reports/reports.xml'],
     "active": False,
     "test": [],
     "installable": True

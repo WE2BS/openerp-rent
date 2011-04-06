@@ -339,7 +339,7 @@ class RentOrder(osv.osv):
 
         for order in orders:
 
-            if order.state == 'ongoing':
+            if order.state in ('draft', 'confirmed', 'ongoing'):
                 # Check invoices
                 invoices_ids = []
                 for invoice in order.invoices_ids:
@@ -356,12 +356,14 @@ class RentOrder(osv.osv):
                 if order.in_picking_id.id and order.in_picking_id.state == 'done':
                     raise shipping_exption
 
-                # Remove objects
+                # Remove objects associated to this order
                 self.pool.get('account.invoice').unlink(cursor, user_id, invoices_ids)
                 self.pool.get('stock.picking').unlink(
                     cursor, user_id, [order.out_picking_id.id, order.in_picking_id.id])
-                
-            self.write(cursor, user_id, ids, {'state':'cancelled'})
+
+                self.write(cursor, user_id, order.id, {'state':'cancelled'})
+            else:
+                raise osv.except_osv(_('Error'), _("You can't cancel an order in this state."))
 
         return True
 
@@ -704,8 +706,8 @@ class RentOrder(osv.osv):
 
     _sql_constraints = [
         ('ref_uniq', 'unique(ref)', _('Rent Order reference must be unique !')),
-        ('valid_created_date', 'check(date_created >= CURRENT_DATE)', _('The date must be today of later.')),
-        ('valid_begin_date', 'check(date_begin_rent >= CURRENT_DATE)', _('The begin date must be today or later.')),
+        #('valid_created_date', 'check(date_created >= CURRENT_DATE)', _('The date must be today of later.')),
+        #('valid_begin_date', 'check(date_begin_rent >= CURRENT_DATE)', _('The begin date must be today or later.')),
         ('begin_after_create', 'check(date_begin_rent >= date_created)', _('The begin date must later than the order date.')),
         ('valid_discount', 'check(discount >= 0 AND discount <= 100)', _('Discount must be a value between 0 and 100.')),
     ]
@@ -799,7 +801,7 @@ class RentOrderLine(osv.osv):
             rent_price = self.get_rent_price(line, order_duration, order_unity,
                 product_price_unity, product_price_factor)
             order_price = self.get_order_price(line)
-            line_price = rent_price or order_price
+            line_price = (rent_price or order_price) * line.quantity
 
             result[line.id] = {
                 'rent_price' : rent_price,
