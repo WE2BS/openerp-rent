@@ -341,12 +341,12 @@ class RentOrder(osv.osv):
 
             if order.state in ('draft', 'confirmed', 'ongoing'):
                 # Check invoices
-                invoices_ids = []
+                invoice_ids = []
                 for invoice in order.invoices_ids:
                     if invoice.state not in ('draft', 'cancel'):
                         raise osv.except_osv(_("You can't cancel this order."),
                             _("This order have confirmed invoice, and can't be deleted right now."))
-                    invoices_ids.append(invoice.id)
+                    invoice_ids.append(invoice.id)
 
                 # Check stock.picking objects
                 shipping_exption = osv.except_osv(_("You can't cancel this order."),
@@ -357,11 +357,17 @@ class RentOrder(osv.osv):
                     raise shipping_exption
 
                 # Remove objects associated to this order
-                self.pool.get('account.invoice').unlink(cursor, user_id, invoices_ids)
-                self.pool.get('stock.picking').unlink(
-                    cursor, user_id, [order.out_picking_id.id, order.in_picking_id.id])
+                picking_ids = [getattr(order, field).id for field in ('out_picking_id', 'in_picking_id')\
+                                if getattr(order, field).id]
+                self.write(cursor, user_id, order.id, {
+                    'out_picking_id' : False,
+                    'in_picking_id' : False,
+                    'invoices_ids' : [(5)],
+                    'state' : 'cancelled',
+                })
 
-                self.write(cursor, user_id, order.id, {'state':'cancelled'})
+                self.pool.get('account.invoice').unlink(cursor, user_id, invoice_ids)
+                self.pool.get('stock.picking').unlink(cursor, user_id, picking_ids)
             else:
                 raise osv.except_osv(_('Error'), _("You can't cancel an order in this state."))
 

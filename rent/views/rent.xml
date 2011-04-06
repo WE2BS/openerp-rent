@@ -88,7 +88,7 @@
                     <group col="5">
                         <field name="state"/>
                         <button name="on_draft_clicked" string="Go back to draft" states="cancelled" type="object" icon="gtk-convert"/>
-                        <button name="on_cancel_clicked" string="Cancel" states="draft,confirmed" icon="gtk-cancel"/>
+                        <button name="on_cancel_clicked" string="Cancel" states="confirmed" icon="gtk-cancel"/>
                         <button name="on_confirm_clicked" string="Confirm" states="draft" icon="gtk-ok"/>
                     </group>
                 </form>

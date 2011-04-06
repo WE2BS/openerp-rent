@@ -68,8 +68,8 @@
             <field name="act_to" ref="state_cancelled" />
             <field name="signal">on_cancel_clicked</field>
         </record>
-        <record id="confirmed_to_cancel" model="workflow.transition">
-            <field name="act_from" ref="state_confirmed" />
+        <record id="ship_to_cancel" model="workflow.transition">
+            <field name="act_from" ref="state_ship" />
             <field name="act_to" ref="state_cancelled" />
             <field name="signal">on_cancel_clicked</field>
         </record>
