@@ -122,6 +122,8 @@ class RentOrder(osv.osv):
         if client.property_account_position.id:
             result['fiscal_position'] = client.property_account_position.id
 
+
+
         return { 'value' : result }
 
     def on_draft_clicked(self, cursor, user_id, ids, context=None):
@@ -193,8 +195,9 @@ class RentOrder(osv.osv):
 
         for order in orders:
 
-            if order.out_picking_id or order.in_picking_id:
-                continue # TODO: Maybe not ignore them if they already exists.
+            if order.out_picking_id:
+                _logger.warning("Trying to create out move whereas it already exists.")
+                continue
 
             out_picking_id = False
             in_picking_id = False
@@ -731,7 +734,7 @@ class RentOrderLine(osv.osv):
     Rent order lines define products that will be rented.
     """
 
-    def on_product_changed(self, cursor, user_id, ids, product_id, description):
+    def on_product_changed(self, cursor, user_id, ids, product_id, quantity):
 
         """
         This method is called when the product changed :
@@ -760,7 +763,24 @@ class RentOrderLine(osv.osv):
         else:
             result['unit_price'] = product.list_price
 
-        return {'value' : result}
+        warning = self.check_product_quantity(cursor, user_id, product, quantity)
+
+        return {'value' : result, 'warning' : warning}
+
+    def on_quantity_changed(self, cursor, user_id, ids, product_id, quantity):
+
+        """
+        Checks the new quantity on product quantity changed.
+        """
+
+        result = {}
+        if not product_id:
+            return result
+        product = self.pool.get('product.product').browse(cursor, user_id, product_id)
+        if not product.id:
+            return result
+        warning = self.check_product_quantity(cursor, user_id, product, quantity)
+        return {'value' : result, 'warning' : warning}
 
     def get_order_price(self, line):
 
@@ -868,6 +888,24 @@ class RentOrderLine(osv.osv):
                 if line.product_id.type != 'service' or not line.product_id.sale_ok:
                     return False
         return True
+
+    def check_product_quantity(self, cursor, user_id, product, quantity):
+
+        """
+        This method is not called from a constraint. It checks if there is enought quantity of this product,
+        and return a 'warning usable' dictionnary, or an empty one.
+        """
+
+        warning = {}
+        if product.type != 'product':
+            return warning
+        if product.virtual_available < quantity:
+            warning = {
+                'title' : _("Not enought quantity !"),
+                'message' : _("You don't have enought quantity of this product. You asked %d, but there is "
+                              "only %d available. You can continue, but you are warned.") % (quantity, product.virtual_available)
+            }
+        return warning
 
     _name = 'rent.order.line'
     _rec_name = 'description'

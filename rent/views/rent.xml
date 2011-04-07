@@ -132,10 +132,10 @@
                     <notebook>
                         <page string="General">
                             <separator string="Product information" colspan="4"/>
-                            <field name="product_id" colspan="4" on_change="on_product_changed(product_id,description)"/>
+                            <field name="product_id" colspan="4" on_change="on_product_changed(product_id,quantity)"/>
                             <field name="description"/>
                             <field name="product_id_uom"/>
-                            <field name="quantity"/>
+                            <field name="quantity" on_change="on_quantity_changed(product_id,quantity)"/>
                             <field name="discount"/>
                             <field name="product_type"/>
                             <field name="unit_price"/>
