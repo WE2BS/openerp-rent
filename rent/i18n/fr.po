@@ -261,7 +261,7 @@ msgstr "Le bon de location \"%s\" a été réinitialisé."
 #: model:ir.ui.menu,name:rent.rent_order_menu
 #: view:rent.order:0
 msgid "Rent Orders"
-msgstr "Bons de locations"
+msgstr "Bons de location"
 
 #. module: rent
 #: code:addons/rent/rent.py:633
