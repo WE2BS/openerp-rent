@@ -200,7 +200,6 @@ class RentOrder(osv.osv):
                 continue
 
             out_picking_id = False
-            in_picking_id = False
 
             warehouse_stock_id = order.shop_id.warehouse_id.lot_stock_id.id
             if order.partner_shipping_address_id.partner_id.property_stock_customer.id:
@@ -211,12 +210,13 @@ class RentOrder(osv.osv):
             for line in order.rent_line_ids:
 
                 if line.product_id.product_tmpl_id.type not in ('product', 'consu'):
+                    _logger.info("Ignored product %s, not stockable." % line.product_id.name)
                     continue
 
                 # We create picking only if there is at least one product to move.
                 # That's why we do it after checking the product type, because it could be
                 # service rent only.
-                if not out_picking_id or not in_picking_id:
+                if not out_picking_id:
 
                     out_picking_id = picking_pool.create(cursor, user_id, {
                         'origin' : order.ref,
@@ -224,7 +224,7 @@ class RentOrder(osv.osv):
                         'state' : 'auto',
                         'move_type' : 'one',
                         'invoice_state' : 'none',
-                        'date' : time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
+                        'date' : fields.date.today(),
                         'address_id' : order.partner_shipping_address_id.id,
                         'company_id' : order.company_id.id,
                     })
@@ -234,7 +234,7 @@ class RentOrder(osv.osv):
                     'name': line.description,
                     'picking_id': out_picking_id,
                     'product_id': line.product_id.id,
-                    'date': time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
+                    'date': fields.date.today(),
                     'date_expected': order.date_out_shipping,
                     'product_qty': line.quantity,
                     'product_uom': line.product_id_uom.id,
@@ -800,6 +800,7 @@ class RentOrderLine(osv.osv):
 
         if line.product_type != 'rent':
             return 0.0
+
         return line.unit_price * product_price_factor * order_duration
 
     def get_prices(self, cursor, user_id, ids, fields_name, arg, context):
@@ -827,12 +828,12 @@ class RentOrderLine(osv.osv):
             rent_price = self.get_rent_price(line, order_duration, order_unity,
                 product_price_unity, product_price_factor)
             order_price = self.get_order_price(line)
-            line_price = (rent_price or order_price) * line.quantity
+            line_price = (rent_price or order_price) * (1-line.discount/100.0)
 
             result[line.id] = {
                 'rent_price' : rent_price,
                 'order_price' : order_price,
-                'line_price' : line_price * (1-line.discount/100.0),
+                'line_price' : line_price * line.quantity,
                 'real_price' : line_price,
             }
 
@@ -876,7 +877,8 @@ class RentOrderLine(osv.osv):
     def check_product_type(self, cursor, user_id, ids, context=None):
 
         """
-        The order price must me > 0 if the procu can't be rented.
+        Check that the product can be rented if it's makred as 'rent', and that is is
+        a service product it it's marked as 'Service' or at least, sellable.
         """
 
         lines = self.browse(cursor, user_id, ids, context)
@@ -934,7 +936,7 @@ class RentOrderLine(osv.osv):
         'tax_ids': fields.many2many('account.tax', 'rent_order_line_taxes', 'rent_order_line_id', 'tax_id',
             _('Taxes'), readonly=True, states={'draft': [('readonly', False)]}),
         'notes' : fields.text(_('Notes')),
-        'unit_price' : fields.float(_('Price'), required=True, states={'draft':[('readonly', False)]}, help=_(
+        'unit_price' : fields.float(_('Unit Price'), required=True, states={'draft':[('readonly', False)]}, help=_(
             'The price per duration or the sale price, depending of the product type.')),
         'real_price' : fields.function(get_prices, method=True, multi=True, type="float", string=_("Price for duration"),
             help=_('This price correspond to the price of the product, not matter its type. In the case of a rented '

@@ -63,7 +63,7 @@ class RentOrderRtzLine(osv.osv):
 
         if line.product_type != 'rent':
             return 0.0
-        return line.unit_price * product_price_factor * line.coeff
+        return line.unit_price * product_price_factor * order_duration * line.coeff
 
     def get_default_coeff(self, cursor, user_id, context=None):
         if context is None:
