@@ -1,0 +1,56 @@
+# Translation of OpenERP Server.
+# This file contains the translation of the following modules:
+#	* rent_rtz
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenERP Server 6.0.2\n"
+"Report-Msgid-Bugs-To: support@openerp.com\n"
+"POT-Creation-Date: 2011-04-07 11:26+0000\n"
+"PO-Revision-Date: 2011-04-07 11:26+0000\n"
+"Last-Translator: <>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: rent_rtz
+#: code:addons/rent_rtz/rent.py:82
+#: field:rent.order.line,coeff:0
+#, python-format
+msgid "Coefficient"
+msgstr "Coefficient"
+
+#. module: rent_rtz
+#: constraint:rent.order.line:0
+msgid "You can't use this product type with this product. Check that the product is marked for rent or for sale. Moreover, Service products must be declared as 'Service' in the product view."
+msgstr "Vous ne pouvez pas utiliser ce produit avec ce type de produit. Vérifiez que le produit peut être loué ou acheté. De plus, les produits de type 'Service' doivent être défini comme tel dans la fiche produit."
+
+#. module: rent_rtz
+#: model:ir.actions.report.xml,name:rent_rtz.rent_order_rtz_report
+msgid "Quotation / Order"
+msgstr "Devis / Commande"
+
+#. module: rent_rtz
+#: model:ir.model,name:rent_rtz.model_rent_order_line
+msgid "rent.order.line"
+msgstr "rent.order.line"
+
+#. module: rent_rtz
+#: sql_constraint:rent.order.line:0
+msgid "The price must be superior to 0."
+msgstr "Le prix doit être superieur à 0."
+
+#. module: rent_rtz
+#: code:addons/rent_rtz/rent.py:90
+#: sql_constraint:rent.order.line:0
+#, python-format
+msgid "The coefficient must be superior to 0."
+msgstr "Le coefficient doit être superieur à 0."
+
+#. module: rent_rtz
+#: sql_constraint:rent.order.line:0
+msgid "Discount must be a value between 0 and 100."
+msgstr "La réduction doitê tre une valeur entre 0 et 100."
+
