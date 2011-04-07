@@ -499,10 +499,10 @@ class RentOrder(osv.osv):
 
         return result
 
-    def get_invoice_between(self, cursor, user_id, order, begin_date, duration, current, max):
+    def get_invoice_at(self, cursor, user_id, order, begin_date, current, max):
 
         """
-        Generates an invoice at the specified date, for the specified duration. The two last arguenbts current and max
+        Generates an invoice at the specified date. The two last arguenbts current and max
         defines the maximum number of invoices and the current invoice number. For example: current=4, max=12.
         """
 
@@ -547,8 +547,8 @@ class RentOrder(osv.osv):
         Generates only one invoice (at the end of the rent).
         """
 
-        return [self.get_invoice_between(cursor, user_id, order,
-            order.date_begin_rent, order.rent_duration, 1, 1)]
+        return [self.get_invoice_at(cursor, user_id, order,
+            order.date_begin_rent, 1, 1)]
 
     def test_have_invoices(self, cursor, user_id, ids, *args):
 
