@@ -499,7 +499,25 @@ class RentOrder(osv.osv):
 
         return result
 
-    def get_invoice_at(self, cursor, user_id, order, begin_date, current, max):
+    def get_invoice_comment(self, order, date, current, max, period_begin, period_end):
+
+        """
+        This method must return a comment that will be added to the invoice.
+        """
+
+        return _(
+            "Rental from %s to %s, invoice %d/%d.\n"
+            "Invoice for the period %s to %s."
+        ) % (
+            order.date_begin_rent,
+            order.date_end_rent,
+            current,
+            max,
+            period_begin,
+            period_end,
+        )
+
+    def get_invoice_at(self, cursor, user_id, order, date, current, max, invoice_period_begin, invoice_period_end):
 
         """
         Generates an invoice at the specified date. The two last arguenbts current and max
@@ -515,18 +533,19 @@ class RentOrder(osv.osv):
                 'origin' : order.ref,
                 'type' : 'out_invoice',
                 'state' : 'draft',
-                'date_invoice' : begin_date,
+                'date_invoice' : date,
                 'partner_id' : order.partner_id.id,
                 'address_invoice_id' : order.partner_invoice_address_id.id,
                 'account_id' : order.partner_id.property_account_receivable.id,
                 'fiscal_position' : order.fiscal_position.id,
+                'comment' : self.get_invoice_comment(order, date, current, max, invoice_period_begin, invoice_period_end),
             }
         )
 
         # Create the lines
         lines_ids = [line.id for line in order.rent_line_ids]
         lines_data = self.pool.get('rent.order.line').get_invoice_lines_data(cursor, user_id, lines_ids)
-        
+
         for line_data in lines_data:
             line_data['invoice_id'] = invoice_id
             invoice_line_pool.create(cursor, user_id, line_data)
@@ -548,7 +567,7 @@ class RentOrder(osv.osv):
         """
 
         return [self.get_invoice_at(cursor, user_id, order,
-            order.date_begin_rent, 1, 1)]
+            order.date_begin_rent, 1, 1, order.date_begin_rent, order.date_end_rent)]
 
     def test_have_invoices(self, cursor, user_id, ids, *args):
 
@@ -691,12 +710,9 @@ class RentOrder(osv.osv):
     }
 
     _defaults = {
-        'date_created':
-            lambda *args, **kwargs: time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
-        'date_begin_rent':
-            lambda *args, **kwargs: time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
-        'date_out_shipping':
-            lambda *args, **kwargs: time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
+        'date_created': fields.datetime.now,
+        'date_begin_rent': fields.datetime.now,
+        'date_out_shipping': fields.datetime.now,
         'state':
             'draft',
         'salesman': # Default salesman is the curent user
@@ -842,7 +858,7 @@ class RentOrderLine(osv.osv):
     def get_invoice_lines_data(self, cursor, user_id, ids, context=None):
 
         """
-        Returns a dictionary that contains rent.order.line ids as key, and a dictionary of data used to create the invoice lines.
+        Returns a dictionary that data used to create the invoice lines.
         """
 
         rent_lines = self.browse(cursor, user_id, ids, context)

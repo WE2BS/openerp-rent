@@ -79,7 +79,7 @@
                             </group>
                         </page>
                         <page string="Invoices">
-                            <field name="invoices_ids" nolabel="1"/>
+                            <field name="invoices_ids" nolabel="1" context="{'form_view_ref' : 'account.invoice_form'}"/>
                         </page>
                         <page string="Notes">
                             <field name="notes" colspan="4" nolabel="1"/>

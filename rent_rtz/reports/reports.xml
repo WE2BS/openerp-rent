@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <openerp>
 <data>
+    <!-- Order -->
     <record id="rent_order_rtz_report" model="ir.actions.report.xml">
         <field name="name">Quotation / Order</field>
         <field name="type">ir.actions.report.xml</field>
@@ -20,6 +21,29 @@
         <field name="models" eval="['rent.order']"/>
         <field name="name">rent_order_rtz_report</field>
         <field eval="'ir.actions.report.xml,'+str(rent_order_rtz_report)" name="value"/>
+        <field eval="True" name="isobject"/>
+        <field eval="True" name="replace"/>
+    </ir_set>
+    <!-- Invoice -->
+    <record id="invoice_rtz_report" model="ir.actions.report.xml">
+        <field name="name">Print Invoice</field>
+        <field name="type">ir.actions.report.xml</field>
+        <field name="model">account.invoice</field>
+        <field name="report_name">invoice_rtz_report</field>
+        <field name="report_type">aeroo</field>
+        <field name="in_format">oo-odt</field>
+        <field name="out_format" search="[('code', '=', 'oo-pdf')]"/>
+        <field name="parser_loc">rent_rtz/reports/parser.py</field>
+        <field name="report_rml">rent_rtz/reports/invoice.odt</field>
+        <field name="parser_state">loc</field>
+        <field name="tml_source">file</field>
+    </record>
+    <ir_set>
+        <field name="key">action</field>
+        <field name="key2">client_print_multi</field>
+        <field name="models" eval="['account.invoice']"/>
+        <field name="name">invoice_rtz_report</field>
+        <field eval="'ir.actions.report.xml,'+str(invoice_rtz_report)" name="value"/>
         <field eval="True" name="isobject"/>
         <field eval="True" name="replace"/>
     </ir_set>
