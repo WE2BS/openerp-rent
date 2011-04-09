@@ -251,7 +251,7 @@ class RentOrder(osv.osv):
                 workflow.trg_validate(user_id, 'stock.picking',
                     out_picking_id, 'button_confirm', cursor)
                 self.write(cursor, user_id, order.id,
-                    {'out_picking_id' : out_picking_id}),
+                    {'out_picking_id' : out_picking_id})
 
                 # Check assignement (TODO: This should be optional)
                 picking_pool.action_assign(cursor, user_id, [out_picking_id])
