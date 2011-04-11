@@ -518,7 +518,7 @@ class RentOrder(osv.osv):
 
         return _(
             "Rental from %s to %s, invoice %d/%d.\n"
-            "Invoice for the period %s to %s."
+            "Invoice for the period from %s to %s."
         ) % (
             begin_date,
             end_date,

@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import openlib
+
 from osv import osv, fields
 from tools.translate import _
 
@@ -54,12 +56,46 @@ COEFF_MAPPING = {
     'more' : 9,
 }
 
+class RentOrderRtz(osv.osv):
+
+    def get_invoice_comment(self, cursor, user_id, order, date, current, max, period_begin, period_end):
+
+        """
+        This method is overriden from rent.order object to only show dates, not times.
+        """
+
+        partner_lang = openlib.partner.get_partner_lang(cursor, user_id, order.partner_id)
+        format = partner_lang.date_format
+
+        begin_date = openlib.to_datetime(order.date_begin_rent).strftime(format)
+        end_date = openlib.to_datetime(order.date_end_rent).strftime(format)
+
+        period_begin = openlib.to_datetime(period_begin).strftime(format)
+        period_end = openlib.to_datetime(period_end).strftime(format)
+
+        return _(
+            "Rental from %s to %s, invoice %d/%d.\n"
+            "Invoice for the period from %s to %s."
+        ) % (
+            begin_date,
+            end_date,
+            current,
+            max,
+            period_begin,
+            period_end,
+        )
+
+    _inherit = 'rent.order'
+
+RentOrderRtz()
+
 class RentOrderRtzLine(osv.osv):
 
-    # Inherit the rent.order.line object to add a special "Coefficient" field.
-    # This field is used to compute the price on the line.
-
     def get_rent_price(self, line, order_duration, order_unity, product_price_unity, product_price_factor):
+
+        """
+        We take the coeff field into account when computing the rent price.
+        """
 
         if line.product_type != 'rent':
             return 0.0
