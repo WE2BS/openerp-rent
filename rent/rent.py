@@ -23,6 +23,8 @@ import math
 import netsvc
 import datetime
 
+import openlib
+
 from osv import osv, fields
 from tools.translate import _
 from tools.misc import cache, DEFAULT_SERVER_DATETIME_FORMAT
@@ -499,18 +501,27 @@ class RentOrder(osv.osv):
 
         return result
 
-    def get_invoice_comment(self, order, date, current, max, period_begin, period_end):
+    def get_invoice_comment(self, cursor, user_id, order, date, current, max, period_begin, period_end):
 
         """
         This method must return a comment that will be added to the invoice.
         """
 
+        partner_lang = openlib.partner.get_partner_lang(cursor, user_id, order.partner_id)
+        datetime_format = partner_lang.date_format + _(' at ') + partner_lang.time_format
+
+        begin_date = openlib.to_datetime(order.date_begin_rent).strftime(datetime_format)
+        end_date = openlib.to_datetime(order.date_end_rent).strftime(datetime_format)
+
+        period_begin = openlib.to_datetime(period_begin).strftime(datetime_format)
+        period_end = openlib.to_datetime(period_end).strftime(datetime_format)
+
         return _(
             "Rental from %s to %s, invoice %d/%d.\n"
             "Invoice for the period %s to %s."
         ) % (
-            order.date_begin_rent,
-            order.date_end_rent,
+            begin_date,
+            end_date,
             current,
             max,
             period_begin,
@@ -538,7 +549,8 @@ class RentOrder(osv.osv):
                 'address_invoice_id' : order.partner_invoice_address_id.id,
                 'account_id' : order.partner_id.property_account_receivable.id,
                 'fiscal_position' : order.fiscal_position.id,
-                'comment' : self.get_invoice_comment(order, date, current, max, invoice_period_begin, invoice_period_end),
+                'comment' : self.get_invoice_comment(
+                    cursor, user_id, order, date, current, max, invoice_period_begin, invoice_period_end),
             }
         )
 
