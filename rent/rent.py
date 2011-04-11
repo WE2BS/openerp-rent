@@ -507,6 +507,10 @@ class RentOrder(osv.osv):
         This method must return a comment that will be added to the invoice.
         """
 
+        # Because there isn't any context passed from workflow actions, we have to pick the lang from the
+        # partner object to know which lang to use. This context variable will be used by _().
+        context = {'lang' : openlib.get_partner_lang(cursor, user_id, order.partner_id).code}
+
         partner_lang = openlib.partner.get_partner_lang(cursor, user_id, order.partner_id)
         datetime_format = partner_lang.date_format + _(' at ') + partner_lang.time_format
 

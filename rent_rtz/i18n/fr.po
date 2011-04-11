@@ -50,7 +50,7 @@ msgstr "The begin date must later than the order date."
 #. module: rent_rtz
 #: model:ir.actions.report.xml,name:rent_rtz.rent_order_rtz_report
 msgid "Quotation / Order"
-msgstr "Quotation / Order"
+msgstr "Devis / Commande"
 
 #. module: rent_rtz
 #: sql_constraint:rent.order:0
