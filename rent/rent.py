@@ -562,6 +562,9 @@ class RentOrder(osv.osv):
             line_data['invoice_id'] = invoice_id
             invoice_line_pool.create(cursor, user_id, line_data)
 
+        # Update taxes
+        invoice_pool.button_reset_taxes(cursor, user_id, [invoice_id])
+
         return invoice_id
 
     def get_invoice_periods(self, cursor, user_id, context=None):

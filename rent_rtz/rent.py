@@ -74,15 +74,13 @@ class RentOrderRtz(osv.osv):
         period_end = openlib.to_datetime(period_end).strftime(format)
 
         return _(
-            "Rental from %s to %s, invoice %d/%d.\n"
-            "Invoice for the period from %s to %s."
+            "Rental from %s to %s.\n"
+            "Invoice %d/%d.\n"
         ) % (
             begin_date,
             end_date,
             current,
             max,
-            period_begin,
-            period_end,
         )
 
     _inherit = 'rent.order'
@@ -110,6 +108,21 @@ class RentOrderRtzLine(osv.osv):
             if context['duration'] in COEFF_MAPPING:
                 return COEFF_MAPPING[context['duration']]
         return COEFF_MAPPING['more']
+
+    def get_invoice_lines_data(self, cursor, user_id, ids, context=None):
+
+        """
+        We append the coeff value tu the name in the invoice line.
+        """
+
+        # TODO: Find a way to avoid the double browse (the one within super() and this one
+        lines = self.browse(cursor, user_id, ids, context)
+        result = super(RentOrderRtzLine, self).get_invoice_lines_data(cursor, user_id, ids, context)
+
+        for index, line_data in enumerate(result):
+            line_data['name'] += ' (Coeff: %d)' % lines[index].coeff
+
+        return result
 
     _inherit = 'rent.order.line'
     _name = 'rent.order.line'
