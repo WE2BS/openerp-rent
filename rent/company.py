@@ -18,7 +18,7 @@
 #
 
 from osv import osv, fields
-from rent import UNITIES
+from openlib import Searcher
 from tools.translate import _
 
 class Company(osv.osv):
@@ -34,14 +34,16 @@ class Company(osv.osv):
     _inherit = 'res.company'
     _name = 'res.company'
     _columns = {
-        'rent_unity' : fields.selection(UNITIES, _('Rent minimal unity'),
+        'rent_unity' : fields.many2one('product.uom', string=_('Rent minimal unity'),
             help=_("This will define the minimum rent unity. "
                    "You won't be able to rent a product for less that one of this unity. "
                    "Products prices will also be defined for this unity."),
             required=True)
     }
     _defaults = {
-        'rent_unity' : 'day'
+        'rent_unity' :
+            lambda self, cursor, user_id, context: Searcher(cursor, user_id, 'ir.model.data',
+                name='uom_day', module='rent').browse_one().res_id
     }
 
 Company()

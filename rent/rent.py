@@ -587,6 +587,15 @@ class RentOrder(osv.osv):
         return [self.get_invoice_at(cursor, user_id, order,
             order.date_begin_rent, 1, 1, order.date_begin_rent, order.date_end_rent)]
 
+    def get_duration_unity_ids(self, cursor, user_id, context):
+
+        """
+        Returns the ids of the duration unities (product.uom).
+        """
+
+        return [10]
+        
+
     def test_have_invoices(self, cursor, user_id, ids, *args):
 
         """
@@ -614,6 +623,17 @@ class RentOrder(osv.osv):
         return all(line.state == 'done' for line in self.browse(
             cursor, user_id, ids[0]).in_picking_id.move_lines)
 
+    def default_duration_unity(self, cursor, user_id, context=None):
+
+        """
+        Returns the company's unity by default.
+        """
+
+        default_company_id = 1 # TODO: Use ir.values, see _defaults
+        default_company = openlib.Searcher(cursor, user_id, 'res.company', id=default_company_id).browse_one()
+
+        return default_company.rent_unity.id
+
     _name = 'rent.order'
     _sql_constraints = []
     _rec_name = 'ref'
@@ -635,7 +655,7 @@ class RentOrder(osv.osv):
             readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'Date of the begin of the leasing.')),
         'date_end_rent' : fields.function(get_end_date, type="datetime", method=True, string=_("Rent end date")),
-        'rent_duration_unity' : fields.selection(get_duration_unities, _('Duration unity'),
+        'rent_duration_unity' : fields.many2one('product.uom', 
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=_(
             'The duration unity, available choices depends of your company configuration.')),
         'rent_duration' : fields.integer(_('Duration'),
@@ -738,9 +758,8 @@ class RentOrder(osv.osv):
         'ref': # The ref sequence is defined in sequence.xml (Default: RENTXXXXXXX)
             lambda self, cursor, user_id, context:
                 self.pool.get('ir.sequence').get(cursor, user_id, 'rent.order'),
-        'rent_duration_unity' :
-            lambda self, cursor, user_id, context: self.get_duration_unities(cursor, user_id, context)[0][0],
         'rent_duration' : 1,
+        'rent_duration_unity' : default_duration_unity,
         'rent_invoice_period' : 'once',
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
         'discount' : 0.0,
