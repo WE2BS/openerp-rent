@@ -86,7 +86,29 @@ class RentOrderRtz(osv.osv):
             max,
         )
 
+    def get_products_buy_price(self, cursor, user_id, ids, field_name, args, context=None):
+
+        """
+        Returns the total of the buy price of the products. This is used to evaluate the price
+        of the rented products, in case of problems with assurances.
+        """
+
+        orders = self.browse(cursor, user_id, ids, context=context)
+        result = {}
+
+        for order in orders:
+            total = 0
+            for line in order.rent_line_ids:
+                total += line.product_id.product_tmpl_id.standard_price * line.quantity
+            result[order.id] = total
+
+        return result
+
     _inherit = 'rent.order'
+    _columns = {
+        'total_products_buy_price' : fields.function(get_products_buy_price, type="float",
+            string=_('Total products buy price'), method=True),
+    }
 
 RentOrderRtz()
 
