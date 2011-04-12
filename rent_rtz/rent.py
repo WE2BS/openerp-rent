@@ -64,8 +64,7 @@ class RentOrderRtz(osv.osv):
         This method is overriden from rent.order object to only show dates, not times.
         """
 
-        # Because there isn't any context passed from workflow actions, we have to pick the lang from the
-        # partner object to know which lang to use. This context variable will be used by _().
+        # We use the lang of the partner instead of the lang of the user tu put the text into the invoice.
         context = {'lang' : openlib.get_partner_lang(cursor, user_id, order.partner_id).code}
         
         partner_lang = openlib.partner.get_partner_lang(cursor, user_id, order.partner_id)

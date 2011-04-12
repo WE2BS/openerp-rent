@@ -507,8 +507,7 @@ class RentOrder(osv.osv):
         This method must return a comment that will be added to the invoice.
         """
 
-        # Because there isn't any context passed from workflow actions, we have to pick the lang from the
-        # partner object to know which lang to use. This context variable will be used by _().
+        # We use the lang of the partner instead of the lang of the user tu put the text into the invoice.
         context = {'lang' : openlib.get_partner_lang(cursor, user_id, order.partner_id).code}
 
         partner_lang = openlib.partner.get_partner_lang(cursor, user_id, order.partner_id)
@@ -936,11 +935,11 @@ class RentOrderLine(osv.osv):
         warning = {}
         if product.type != 'product':
             return warning
-        if product.virtual_available < quantity:
+        if product.qty_available < quantity: # We use the real quantity, not the virtual one for renting !
             warning = {
                 'title' : _("Not enought quantity !"),
-                'message' : _("You don't have enought quantity of this product. You asked %d, but there is "
-                              "only %d available. You can continue, but you are warned.") % (quantity, product.virtual_available)
+                'message' : _("You don't have enought quantity of this product. You asked %d, but there are "
+                              "%d available. You can continue, but you are warned.") % (quantity, product.qty_available)
             }
         return warning
 
