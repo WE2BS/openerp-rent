@@ -20,14 +20,6 @@
 from osv import osv, fields
 from tools.translate import _
 
-from rent import UNITIES
-
-def get_unity_display(name):
-    for key, value in UNITIES:
-        if key == name:
-            return value
-    raise Exception('Invalid unity key.')
-
 class Product(osv.osv):
 
     # Extends the basic product.product model :
@@ -57,11 +49,10 @@ class Product(osv.osv):
         # the label will be 'Rent price (in Day)'.
 
         result = super(osv.osv, self).fields_get(cr, user, fields, context)
-        unity = self.pool.get(
-            'res.users').browse(cr, user, user, context=context).company_id.rent_unity
+        unity = self.pool.get('res.users').browse(cr, user, user, context=context).company_id.rent_unity
 
         if 'rent_price' in result:
-            result['rent_price']['string'] = result['rent_price']['string'] % get_unity_display(unity)
+            result['rent_price']['string'] = result['rent_price']['string'] % unity.name
 
         return result
 

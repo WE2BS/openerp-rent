@@ -42,7 +42,7 @@ class Company(osv.osv):
     }
     _defaults = {
         'rent_unity' :
-            lambda self, cursor, user_id, context: Searcher(cursor, user_id, 'ir.model.data',
+            lambda self, cursor, user_id, context: Searcher(cursor, user_id, 'product.uom',
                 name='uom_day', module='rent').browse_one().res_id
     }
 

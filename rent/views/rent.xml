@@ -57,7 +57,9 @@
                             <field name="date_out_shipping"/>
                             <group colspan="4" col="6">
                                 <field name="rent_duration"/>
-                                <field name="rent_duration_unity"/>
+                                <field name="rent_duration_unity_category_id"/>
+                                <field name="rent_duration_unity" widget="selection"
+                                       domain="[('category_id', '=', rent_duration_unity_category_id)]"/>
                                 <field name="rent_invoice_period"/>
                             </group>
                             <field name="description" colspan="4"/>
