@@ -602,15 +602,6 @@ class RentOrder(osv.osv):
 
         return default_company.rent_unity.id
 
-    def default_duration_category_unity(self, cr, uid, context=None):
-
-        """
-        Returns the duration unity category. We have to create a custom field for this
-        to be able to use it in the domain of rent_duration_unity.
-        """
-
-        return openlib.Searcher(cr, uid, 'ir.model.data', name='duration_uom_categ', module='rent').browse_one().res_id
-
     _name = 'rent.order'
     _sql_constraints = []
     _rec_name = 'ref'
@@ -632,7 +623,6 @@ class RentOrder(osv.osv):
         'rent_duration_unity' : fields.many2one('product.uom', string='Unity',
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=
             'The duration unity, available choices depends of your company configuration.'),
-        'rent_duration_unity_category_id' : fields.many2one('product.uom.categ', 'Duration Unity Category', required=True),
         'rent_duration' : fields.integer('Duration',
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=
             'The duration of the lease, expressed in selected unit.'),
@@ -730,7 +720,6 @@ class RentOrder(osv.osv):
                 self.pool.get('ir.sequence').get(cr, uid, 'rent.order'),
         'rent_duration' : 1,
         'rent_duration_unity' : default_duration_unity,
-        'rent_duration_unity_category_id' : default_duration_category_unity,
         'rent_invoice_period' : 'once',
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
         'discount' : 0.0,
