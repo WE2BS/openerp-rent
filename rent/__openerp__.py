@@ -30,8 +30,8 @@
     "depends": ["base", "openlib", "sale", "report_aeroo"],
     "init_xml": [],
     "demo_xml": [],
-    "update_xml": ['views/rent.xml', 'views/product.xml', 'views/company.xml', 'views/menus.xml', 'views/sequence.xml',
-                   'workflow/rent.xml', 'data/uoms.xml'],
+    "update_xml": ['data/uoms.xml', 'views/rent.xml', 'views/product.xml', 'views/company.xml',
+                   'views/menus.xml', 'views/sequence.xml', 'workflow/rent.xml'],
     "active": False,
     "test": [],
     "installable": True

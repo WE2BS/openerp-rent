@@ -8,7 +8,6 @@
             <field name="view_mode">tree,form</field>
             <field name="usage">menu</field>
             <field name="search_view_id" ref="rent_order_search_view"/>
-            <field name="context" eval="{'duration_category_id' : ref('rent.duration_uom_categ')}"/>
         </record>
         <menuitem id="rent_order_menu" parent="base.menu_sales" name="Rent Orders" action="rent_action_form"/>
     </data>

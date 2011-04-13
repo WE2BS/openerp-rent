@@ -11,7 +11,7 @@
             <field name="inherit_id" ref="base.view_company_form"/>
             <field name="arch" type="xml">
                     <field name="currency_id" position="after">
-                        <field name="rent_unity" colspan ="4"/>
+                        <field name="rent_unity_category" colspan ="4"/>
                     </field>
             </field>
         </record>

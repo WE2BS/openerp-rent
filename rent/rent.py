@@ -597,10 +597,8 @@ class RentOrder(osv.osv):
         Returns the company's unity by default.
         """
 
-        default_company_id = 1 # TODO: Use ir.values, see _defaults
-        default_company = openlib.Searcher(cr, uid, 'res.company', id=default_company_id).browse_one()
-
-        return default_company.rent_unity.id
+        # TODO: Use the same value that the default shop's company
+        return openlib.Searcher(cr, uid, 'product.uom', category_id__xmlid='rent.duration_uom_categ').browse_one().id
 
     _name = 'rent.order'
     _sql_constraints = []
@@ -620,6 +618,8 @@ class RentOrder(osv.osv):
         'date_begin_rent' : fields.datetime('Rent begin date', required=True,
             readonly=True, states={'draft' : [('readonly', False)]}, help='Date of the begin of the leasing.'),
         'date_end_rent' : fields.function(get_end_date, type="datetime", method=True, string="Rent end date"),
+        'rent_duration_unity_category' : fields.related('company_id', 'rent_unity_category', relation="product.uom.categ",
+            string='Duration Unity Category', readonly=True, required=True, type="many2one"),
         'rent_duration_unity' : fields.many2one('product.uom', string='Unity',
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=
             'The duration unity, available choices depends of your company configuration.'),

@@ -19,31 +19,19 @@
 
 from osv import osv, fields
 from openlib import Searcher
-from tools.translate import _
 
 class Company(osv.osv):
-
-    # We override the res.company model to add a configuration field which define
-    # the minimum rent time unity (Hour, Day, Month, Year).
-    #
-    # All rent duration will be multiple of this unity. For example, if you set it to 'Day',
-    # and you rent a product for 2 Months, it will be ~60 days.
-    #
-    # The price defined on products is the price for 1 time unity.
 
     _inherit = 'res.company'
     _name = 'res.company'
     _columns = {
-        'rent_unity' : fields.many2one('product.uom', string=_('Rent minimal unity'),
-            help=_("This will define the minimum rent unity. "
-                   "You won't be able to rent a product for less that one of this unity. "
-                   "Products prices will also be defined for this unity."),
-            required=True)
+        'rent_unity_category' : fields.many2one('product.uom.categ', string='Rent Duration Category',
+            help="The category of products used for renting durations.", required=True)
     }
     _defaults = {
-        'rent_unity' :
-            lambda self, cursor, user_id, context: Searcher(cursor, user_id, 'product.uom',
-                name='uom_day', module='rent').browse_one().res_id
+        'rent_unity_category' :
+            lambda self, cr, uid, context: Searcher(cr, uid, 'ir.model.data',
+                name='duration_uom_categ', module='rent').browse_one().res_id
     }
 
 Company()
