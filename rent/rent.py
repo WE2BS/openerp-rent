@@ -76,7 +76,7 @@ class RentOrder(osv.osv):
         Register an invoice period and associate it a function.
 
         The method must accept these arguments :
-            def get_invoices_for_monthly_period(self, cursor, user_id, order)
+            def get_invoices_for_monthly_period(self, cr, uid, order)
         And must return a dict of dates of invoices to generate.
 
         The order argument is the order object returned by a browse(). You can access it's data for checks.
@@ -88,7 +88,7 @@ class RentOrder(osv.osv):
 
         cls._periods[name] = (showed_name, method_name)
 
-    def on_client_changed(self, cursor, user_id, ids, client_id):
+    def on_client_changed(self, cr, uid, ids, client_id):
 
         """
         Called when the client has changed : we update all addresses fields :
@@ -96,7 +96,7 @@ class RentOrder(osv.osv):
         """
 
         result = {}
-        client = self.pool.get('res.partner').browse(cursor, user_id, client_id)
+        client = self.pool.get('res.partner').browse(cr, uid, client_id)
 
         for address in client.address:
             
@@ -122,41 +122,41 @@ class RentOrder(osv.osv):
 
         return { 'value' : result }
 
-    def on_draft_clicked(self, cursor, user_id, ids, context=None):
+    def on_draft_clicked(self, cr, uid, ids, context=None):
 
         """
         This method is called when the rent order is in cancelled state and the user clicked on 'Go back to draft'.
         """
 
-        orders = self.browse(cursor, user_id, ids, context=context)
+        orders = self.browse(cr, uid, ids, context=context)
         wkf_service = netsvc.LocalService("workflow")
 
         # Update records
-        self.write(cursor, user_id, ids, {
+        self.write(cr, uid, ids, {
             'state' : 'draft',
         })
 
         for order in orders:
 
             # Delete and re-create the workflow
-            wkf_service.trg_delete(user_id, 'rent.order', order.id, cursor)
-            wkf_service.trg_create(user_id, 'rent.order', order.id, cursor)
+            wkf_service.trg_delete(uid, 'rent.order', order.id, cr)
+            wkf_service.trg_create(uid, 'rent.order', order.id, cr)
 
-        for id, name in self.name_get(cursor, user_id, ids):
-            self.log(cursor, user_id, order.id, _('The Rent Order "%s" has been reset.') % name)
+        for id, name in self.name_get(cr, uid, ids):
+            self.log(cr, uid, order.id, _('The Rent Order "%s" has been reset.') % name)
 
         return True
 
-    def on_show_invoices_clicked(self, cursor, user_id, ids, context=None):
+    def on_show_invoices_clicked(self, cr, uid, ids, context=None):
 
         """
         Show the invoices which have been generated.
         """
 
-        order = self.browse(cursor, user_id, ids, context=context)[0]
-        view_id = self.pool.get('ir.model.data').get_object_reference(cursor, user_id, 'account', 'invoice_form')
+        order = self.browse(cr, uid, ids, context=context)[0]
+        view_id = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'account', 'invoice_form')
         view_id = view_id and view_id[1] or False
-        view_xml_id = self.pool.get('ir.ui.view').get_xml_id(cursor, user_id, [view_id])[view_id]
+        view_xml_id = self.pool.get('ir.ui.view').get_xml_id(cr, uid, [view_id])[view_id]
 
         action = {
             'name': '%s Invoice(s)' % order.ref,
@@ -176,7 +176,7 @@ class RentOrder(osv.osv):
         
         return action
 
-    def action_generate_out_move(self, cursor, user_id, orders_ids):
+    def action_generate_out_move(self, cr, uid, orders_ids):
 
         """
         Create the stock moves of the specified orders objects. For each order, two picking are created :
@@ -184,7 +184,7 @@ class RentOrder(osv.osv):
             - An input picking, to get the products back.
         """
 
-        orders = self.browse(cursor, user_id, orders_ids)
+        orders = self.browse(cr, uid, orders_ids)
         move_pool, picking_pool = map(
             self.pool.get, ('stock.move', 'stock.picking'))
         workflow = netsvc.LocalService("workflow")
@@ -214,7 +214,7 @@ class RentOrder(osv.osv):
                 # service rent only.
                 if not out_picking_id:
 
-                    out_picking_id = picking_pool.create(cursor, user_id, {
+                    out_picking_id = picking_pool.create(cr, uid, {
                         'origin' : order.ref,
                         'type' : 'out',
                         'state' : 'auto',
@@ -226,7 +226,7 @@ class RentOrder(osv.osv):
                     })
 
                 # Out move: Stock -> Client
-                move_pool.create(cursor, user_id, {
+                move_pool.create(cr, uid, {
                     'name': line.description,
                     'picking_id': out_picking_id,
                     'product_id': line.product_id.id,
@@ -244,30 +244,30 @@ class RentOrder(osv.osv):
 
             # Confirm picking orders
             if out_picking_id:
-                workflow.trg_validate(user_id, 'stock.picking',
-                    out_picking_id, 'button_confirm', cursor)
-                self.write(cursor, user_id, order.id,
+                workflow.trg_validate(uid, 'stock.picking',
+                    out_picking_id, 'button_confirm', cr)
+                self.write(cr, uid, order.id,
                     {'out_picking_id' : out_picking_id}),
 
                 # Check assignement (TODO: This should be optional)
-                picking_pool.action_assign(cursor, user_id, [out_picking_id])
+                picking_pool.action_assign(cr, uid, [out_picking_id])
 
         return True
 
-    def action_ongoing(self, cursor, user_id, ids):
+    def action_ongoing(self, cr, uid, ids):
 
         """
         We switch to ongoing state when the out picking has been confirmed,
         and invoices have been generated. We have to generate the input picking.
         """
 
-        orders = self.browse(cursor, user_id, ids)
+        orders = self.browse(cr, uid, ids)
         picking_pool, move_pool = map(
             self.pool.get, ('stock.picking', 'stock.move'))
         workflow = netsvc.LocalService("workflow")
 
         for order in orders:
-            in_picking_id = picking_pool.create(cursor, user_id, {
+            in_picking_id = picking_pool.create(cr, uid, {
                 'origin' : order.out_picking_id.origin,
                 'type' : 'in',
                 'state' : 'auto',
@@ -278,7 +278,7 @@ class RentOrder(osv.osv):
                 'company_id' : order.company_id.id,
             })
             for line in order.out_picking_id.move_lines:
-                move_pool.create(cursor, user_id, {
+                move_pool.create(cr, uid, {
                     'name': line.name,
                     'picking_id': in_picking_id,
                     'product_id': line.product_id.id,
@@ -294,39 +294,39 @@ class RentOrder(osv.osv):
                     'state': 'draft',
                 })
             
-            self.write(cursor, user_id, order.id,
+            self.write(cr, uid, order.id,
                 {'in_picking_id' : in_picking_id, 'state' : 'ongoing'})
             
             # Confirm the picking
-            workflow.trg_validate(user_id, 'stock.picking',
-                in_picking_id, 'button_confirm', cursor)
+            workflow.trg_validate(uid, 'stock.picking',
+                in_picking_id, 'button_confirm', cr)
 
             # Check assignement (TODO: This should be optional)
-            picking_pool.action_assign(cursor, user_id, [in_picking_id])
+            picking_pool.action_assign(cr, uid, [in_picking_id])
         
         return True
 
-    def action_generate_invoices(self, cursor, user_id, ids):
+    def action_generate_invoices(self, cr, uid, ids):
 
         """
         This action is called by the workflow activity 'ongoing'. We generate an invoice for the duration period.
         The interval is the duration unity : if you rent for 2 Month, there will be 2 invoices.
         """
 
-        orders = self.browse(cursor, user_id, ids)
+        orders = self.browse(cr, uid, ids)
 
         for order in orders:
 
             period_function = self._periods[order.rent_invoice_period][1]
             period_function = getattr(self, period_function)
 
-            invoices_id = period_function(cursor, user_id, order)
+            invoices_id = period_function(cr, uid, order)
 
-        self.write(cursor, user_id, ids, {'invoices_ids' : [(6, 0, invoices_id)]})
+        self.write(cr, uid, ids, {'invoices_ids' : [(6, 0, invoices_id)]})
 
         return True
 
-    def action_cancel(self, cursor, user_id, ids):
+    def action_cancel(self, cr, uid, ids):
 
         """
         If you cancel the order before invoices have been generated, it's ok.
@@ -334,7 +334,7 @@ class RentOrder(osv.osv):
         You can't cancel an order which have confirmed picking.
         """
 
-        orders = self.browse(cursor, user_id, ids)
+        orders = self.browse(cr, uid, ids)
 
         for order in orders:
 
@@ -358,47 +358,47 @@ class RentOrder(osv.osv):
                 # Remove objects associated to this order
                 picking_ids = [getattr(order, field).id for field in ('out_picking_id', 'in_picking_id')\
                                 if getattr(order, field).id]
-                self.write(cursor, user_id, order.id, {
+                self.write(cr, uid, order.id, {
                     'out_picking_id' : False,
                     'in_picking_id' : False,
                     'invoices_ids' : [(5)],
                     'state' : 'cancelled',
                 })
 
-                self.pool.get('account.invoice').unlink(cursor, user_id, invoice_ids)
-                self.pool.get('stock.picking').unlink(cursor, user_id, picking_ids)
+                self.pool.get('account.invoice').unlink(cr, uid, invoice_ids)
+                self.pool.get('stock.picking').unlink(cr, uid, picking_ids)
             else:
                 raise osv.except_osv(_('Error'), _("You can't cancel an order in this state."))
 
         return True
 
-    def get_order_from_lines(self, cursor, user_id, ids, context=None):
+    def get_order_from_lines(self, cr, uid, ids, context=None):
 
         """
         Returns lines ids associated to this order.
         """
 
-        lines = self.pool.get('rent.order.line').browse(cursor, user_id, ids)
+        lines = self.pool.get('rent.order.line').browse(cr, uid, ids)
         return [line.order_id.id for line in lines]
 
-    def get_end_date(self, cursor, user_id, ids, field_name, arg, context=None):
+    def get_end_date(self, cr, uid, ids, field_name, arg, context=None):
 
         """
         Returns the rent order end date, based on the duration.
         """
 
-        orders = self.browse(cursor, user_id, ids, context=context)
+        orders = self.browse(cr, uid, ids, context=context)
         result = {}
 
         for order in orders:
 
             begin = openlib.to_datetime(order.date_begin_rent)
             duration = order.rent_duration
-            day_unity = openlib.Searcher(cursor, user_id, 'product.uom',
+            day_unity = openlib.Searcher(cr, uid, 'product.uom',
                 category_id__xmlid='rent.duration_uom_categ', name='Day').browse_one()
             
             # Converts the order duration (expressed in days/month/years) into the days duration
-            days = self.pool.get('product.uom')._compute_qty(cursor, user_id,
+            days = self.pool.get('product.uom')._compute_qty(cr, uid,
                 order.rent_duration_unity.id, duration, day_unity.id)
 
             end = begin + datetime.timedelta(days=days)
@@ -408,13 +408,13 @@ class RentOrder(osv.osv):
 
         return result
 
-    def get_invoiced_rate(self, cursor, user_id, ids, fields_name, arg, context=None):
+    def get_invoiced_rate(self, cr, uid, ids, fields_name, arg, context=None):
 
         """
         Returns the percentage of invoices which have been confirmed.
         """
 
-        orders = self.browse(cursor, user_id, ids, context=context)
+        orders = self.browse(cr, uid, ids, context=context)
         result = {}
 
         for order in orders:
@@ -427,7 +427,7 @@ class RentOrder(osv.osv):
             result[order.id] = invoices_confirmed / invoices_count * 100.0
         return result
 
-    def get_totals(self, cursor, user_id, ids, fields_name, arg, context=None):
+    def get_totals(self, cr, uid, ids, fields_name, arg, context=None):
 
         """
         Compute the total if the rent order, with taxes.
@@ -435,7 +435,7 @@ class RentOrder(osv.osv):
 
         result = {}
         tax_pool, fiscal_position_pool = map(self.pool.get, ['account.tax', 'account.fiscal.position'])
-        orders = self.browse(cursor, user_id, ids, context=context)
+        orders = self.browse(cr, uid, ids, context=context)
 
         for order in orders:
 
@@ -450,11 +450,11 @@ class RentOrder(osv.osv):
                 # for the map_tax function used to do the mapping.
                 tax_ids = line.tax_ids
                 if order.fiscal_position.id:
-                    tax_ids = tax_pool.browse(cursor, user_id, fiscal_position_pool.map_tax(
-                        cursor, user_id, order.fiscal_position, tax_ids, context=context),context=context)
+                    tax_ids = tax_pool.browse(cr, uid, fiscal_position_pool.map_tax(
+                        cr, uid, order.fiscal_position, tax_ids, context=context),context=context)
                 
                 # The compute_all function is defined in the account module  Take a look.
-                prices = tax_pool.compute_all(cursor, user_id, tax_ids, line.real_price, line.quantity)
+                prices = tax_pool.compute_all(cr, uid, tax_ids, line.real_price, line.quantity)
 
                 total += prices['total']
                 total_with_taxes += prices['total_included']
@@ -478,16 +478,16 @@ class RentOrder(osv.osv):
 
         return result
 
-    def get_invoice_comment(self, cursor, user_id, order, date, current, max, period_begin, period_end):
+    def get_invoice_comment(self, cr, uid, order, date, current, max, period_begin, period_end):
 
         """
         This method must return a comment that will be added to the invoice.
         """
 
         # We use the lang of the partner instead of the lang of the user to put the text into the invoice.
-        context = {'lang' : openlib.get_partner_lang(cursor, user_id, order.partner_id).code}
+        context = {'lang' : openlib.get_partner_lang(cr, uid, order.partner_id).code}
 
-        partner_lang = openlib.partner.get_partner_lang(cursor, user_id, order.partner_id)
+        partner_lang = openlib.partner.get_partner_lang(cr, uid, order.partner_id)
         datetime_format = partner_lang.date_format + _(' at ') + partner_lang.time_format
 
         begin_date = openlib.to_datetime(order.date_begin_rent).strftime(datetime_format)
@@ -508,7 +508,7 @@ class RentOrder(osv.osv):
             period_end,
         )
 
-    def get_invoice_at(self, cursor, user_id, order, date, current, max, invoice_period_begin, invoice_period_end):
+    def get_invoice_at(self, cr, uid, order, date, current, max, invoice_period_begin, invoice_period_end):
 
         """
         Generates an invoice at the specified date. The two last arguenbts current and max
@@ -518,7 +518,7 @@ class RentOrder(osv.osv):
         invoice_pool, invoice_line_pool = map(self.pool.get, ('account.invoice', 'account.invoice.line'))
 
         # Create the invoice
-        invoice_id = invoice_pool.create(cursor, user_id,
+        invoice_id = invoice_pool.create(cr, uid,
             {
                 'name' : _('Invoice %d/%d') % (current, max),
                 'origin' : order.ref,
@@ -530,24 +530,24 @@ class RentOrder(osv.osv):
                 'account_id' : order.partner_id.property_account_receivable.id,
                 'fiscal_position' : order.fiscal_position.id,
                 'comment' : self.get_invoice_comment(
-                    cursor, user_id, order, date, current, max, invoice_period_begin, invoice_period_end),
+                    cr, uid, order, date, current, max, invoice_period_begin, invoice_period_end),
             }
         )
 
         # Create the lines
         lines_ids = [line.id for line in order.rent_line_ids]
-        lines_data = self.pool.get('rent.order.line').get_invoice_lines_data(cursor, user_id, lines_ids)
+        lines_data = self.pool.get('rent.order.line').get_invoice_lines_data(cr, uid, lines_ids)
 
         for line_data in lines_data:
             line_data['invoice_id'] = invoice_id
-            invoice_line_pool.create(cursor, user_id, line_data)
+            invoice_line_pool.create(cr, uid, line_data)
 
         # Update taxes
-        invoice_pool.button_reset_taxes(cursor, user_id, [invoice_id])
+        invoice_pool.button_reset_taxes(cr, uid, [invoice_id])
 
         return invoice_id
 
-    def get_invoice_periods(self, cursor, user_id, context=None):
+    def get_invoice_periods(self, cr, uid, context=None):
 
         """
         Returns a list of available periods (which have been registered with register_invoice_period()).
@@ -555,50 +555,50 @@ class RentOrder(osv.osv):
 
         return [(period, self._periods[period][0]) for period in self._periods]
 
-    def get_invoices_for_once_period(self, cursor, user_id, order):
+    def get_invoices_for_once_period(self, cr, uid, order):
 
         """
         Generates only one invoice (at the end of the rent).
         """
 
-        return [self.get_invoice_at(cursor, user_id, order,
+        return [self.get_invoice_at(cr, uid, order,
             order.date_begin_rent, 1, 1, order.date_begin_rent, order.date_end_rent)]
 
-    def test_have_invoices(self, cursor, user_id, ids, *args):
+    def test_have_invoices(self, cr, uid, ids, *args):
 
         """
         Method called by the workflow to test if the order have invoices.
         """
 
-        return len(self.browse(cursor, user_id, ids[0]).invoices_ids) > 0
+        return len(self.browse(cr, uid, ids[0]).invoices_ids) > 0
 
-    def test_out_shipping_done(self, cursor, user_id, ids, *args):
+    def test_out_shipping_done(self, cr, uid, ids, *args):
 
         """
         Called by the workflow. Returns True once the product has been output shipped.
         """
         
-        lines = self.browse(cursor, user_id, ids[0]).out_picking_id.move_lines or []
+        lines = self.browse(cr, uid, ids[0]).out_picking_id.move_lines or []
 
         return all(line.state == 'done' for line in lines)
     
-    def test_in_shipping_done(self, cursor, user_id, ids, *args):
+    def test_in_shipping_done(self, cr, uid, ids, *args):
 
         """
         Called by the workflow. Returns True once the product has been input shipped.
         """
         
         return all(line.state == 'done' for line in self.browse(
-            cursor, user_id, ids[0]).in_picking_id.move_lines)
+            cr, uid, ids[0]).in_picking_id.move_lines)
 
-    def default_duration_unity(self, cursor, user_id, context=None):
+    def default_duration_unity(self, cr, uid, context=None):
 
         """
         Returns the company's unity by default.
         """
 
         default_company_id = 1 # TODO: Use ir.values, see _defaults
-        default_company = openlib.Searcher(cursor, user_id, 'res.company', id=default_company_id).browse_one()
+        default_company = openlib.Searcher(cr, uid, 'res.company', id=default_company_id).browse_one()
 
         return default_company.rent_unity.id
 
@@ -724,10 +724,10 @@ class RentOrder(osv.osv):
         'state':
             'draft',
         'salesman': # Default salesman is the curent user
-            lambda self, cursor, user_id, context: user_id,
+            lambda self, cr, uid, context: uid,
         'ref': # The ref sequence is defined in sequence.xml (Default: RENTXXXXXXX)
-            lambda self, cursor, user_id, context:
-                self.pool.get('ir.sequence').get(cursor, user_id, 'rent.order'),
+            lambda self, cr, uid, context:
+                self.pool.get('ir.sequence').get(cr, uid, 'rent.order'),
         'rent_duration' : 1,
         'rent_duration_unity' : default_duration_unity,
         'rent_duration_unity_category_id' : default_duration_category_unity,
@@ -758,7 +758,7 @@ class RentOrderLine(osv.osv):
     Rent order lines define products that will be rented.
     """
 
-    def on_product_changed(self, cursor, user_id, ids, product_id, quantity):
+    def on_product_changed(self, cr, uid, ids, product_id, quantity):
 
         """
         This method is called when the product changed :
@@ -772,7 +772,7 @@ class RentOrderLine(osv.osv):
         if not product_id:
             return result
 
-        product = self.pool.get('product.product').browse(cursor, user_id, product_id)
+        product = self.pool.get('product.product').browse(cr, uid, product_id)
 
         if not product.id:
             return result # Might never happened
@@ -787,11 +787,11 @@ class RentOrderLine(osv.osv):
         else:
             result['unit_price'] = product.list_price
 
-        warning = self.check_product_quantity(cursor, user_id, product, quantity)
+        warning = self.check_product_quantity(cr, uid, product, quantity)
 
         return {'value' : result, 'warning' : warning}
 
-    def on_quantity_changed(self, cursor, user_id, ids, product_id, quantity):
+    def on_quantity_changed(self, cr, uid, ids, product_id, quantity):
 
         """
         Checks the new quantity on product quantity changed.
@@ -800,10 +800,10 @@ class RentOrderLine(osv.osv):
         result = {}
         if not product_id:
             return result
-        product = self.pool.get('product.product').browse(cursor, user_id, product_id)
+        product = self.pool.get('product.product').browse(cr, uid, product_id)
         if not product.id:
             return result
-        warning = self.check_product_quantity(cursor, user_id, product, quantity)
+        warning = self.check_product_quantity(cr, uid, product, quantity)
         return {'value' : result, 'warning' : warning}
 
     def get_order_price(self, line):
@@ -827,13 +827,13 @@ class RentOrderLine(osv.osv):
 
         return line.unit_price * product_price_factor * order_duration
 
-    def get_prices(self, cursor, user_id, ids, fields_name, arg, context):
+    def get_prices(self, cr, uid, ids, fields_name, arg, context):
 
         """
         Returns the price for the duration for one of this product.
         """
 
-        lines = self.browse(cursor, user_id, ids, context=context)
+        lines = self.browse(cr, uid, ids, context=context)
         result = {}
 
         for line in lines:
@@ -842,7 +842,7 @@ class RentOrderLine(osv.osv):
             order_unity = line.order_id.rent_duration_unity
             
             try:
-                product_price_unity = line.order_id.get_duration_unities(cursor, user_id)[0][0]
+                product_price_unity = line.order_id.get_duration_unities(cr, uid)[0][0]
             except KeyError:
                 raise osv.except_osv(_('Invalid duration unit'), _('It seems that there is an invalid duration unity '
                                        'in your company configuration. Contact your system administrator.'))
@@ -863,13 +863,13 @@ class RentOrderLine(osv.osv):
 
         return result
 
-    def get_invoice_lines_data(self, cursor, user_id, ids, context=None):
+    def get_invoice_lines_data(self, cr, uid, ids, context=None):
 
         """
         Returns a dictionary that data used to create the invoice lines.
         """
 
-        rent_lines = self.browse(cursor, user_id, ids, context)
+        rent_lines = self.browse(cr, uid, ids, context)
         result = []
 
         for rent_line in rent_lines:
@@ -898,14 +898,14 @@ class RentOrderLine(osv.osv):
 
         return result
 
-    def check_product_type(self, cursor, user_id, ids, context=None):
+    def check_product_type(self, cr, uid, ids, context=None):
 
         """
         Check that the product can be rented if it's makred as 'rent', and that is is
         a service product it it's marked as 'Service' or at least, sellable.
         """
 
-        lines = self.browse(cursor, user_id, ids, context)
+        lines = self.browse(cr, uid, ids, context)
 
         for line in lines:
             if line.product_type == 'rent' and not line.product_id.can_be_rent:
@@ -915,7 +915,7 @@ class RentOrderLine(osv.osv):
                     return False
         return True
 
-    def check_product_quantity(self, cursor, user_id, product, quantity):
+    def check_product_quantity(self, cr, uid, product, quantity):
 
         """
         This method is not called from a constraint. It checks if there is enought quantity of this product,
