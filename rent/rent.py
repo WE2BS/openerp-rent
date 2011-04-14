@@ -117,8 +117,6 @@ class RentOrder(osv.osv):
         if client.property_account_position.id:
             result['fiscal_position'] = client.property_account_position.id
 
-
-
         return { 'value' : result }
 
     def on_draft_clicked(self, cr, uid, ids, context=None):
@@ -448,7 +446,7 @@ class RentOrder(osv.osv):
                         cr, uid, order.fiscal_position, tax_ids, context=context),context=context)
                 
                 # The compute_all function is defined in the account module  Take a look.
-                prices = tax_pool.compute_all(cr, uid, tax_ids, line.real_price, line.quantity)
+                prices = tax_pool.compute_all(cr, uid, tax_ids, line.real_unit_price, line.quantity)
 
                 total += prices['total']
                 total_with_taxes += prices['total_included']
@@ -773,9 +771,6 @@ class RentOrderLine(osv.osv):
 
         product = self.pool.get('product.product').browse(cr, uid, product_id)
 
-        if not product.id:
-            return result # Might never happened
-
         result['description'] = product.name
         result['tax_ids'] = [tax.id for tax in product.taxes_id]
         result['product_id_uom'] = product.uom_id.id
@@ -815,7 +810,7 @@ class RentOrderLine(osv.osv):
             return 0.0
         return line.unit_price
         
-    def get_rent_price(self, line, order_duration, order_unity, product_price_unity, product_price_factor):
+    def get_rent_price(self, line, rent_unit_price):
 
         """
         Returns the rent price for the line.
@@ -824,7 +819,7 @@ class RentOrderLine(osv.osv):
         if line.product_type != 'rent':
             return 0.0
 
-        return line.unit_price * product_price_factor * order_duration
+        return rent_unit_price * line.order_id.rent_duration
 
     def get_prices(self, cr, uid, ids, fields_name, arg, context):
 
@@ -837,27 +832,19 @@ class RentOrderLine(osv.osv):
 
         for line in lines:
 
-            order_duration = line.order_id.rent_duration
-            order_unity = line.order_id.rent_duration_unity
-            
-            try:
-                product_price_unity = line.order_id.get_duration_unities(cr, uid)[0][0]
-            except KeyError:
-                raise osv.except_osv(_('Invalid duration unit'), _('It seems that there is an invalid duration unity '
-                                       'in your company configuration. Contact your system administrator.'))
+            # We convert the unit price of the product expressed in a unity (Day, Month, etc) into the unity
+            # of the rent order. A unit price of 1€/Day will become a unit price of 30€/Month if the
+            # order duration unity is in month. This price is not shown, just used in computation.
+            converted_rent_product_price = self.pool.get('product.uom')._compute_price(cr, uid,
+                line.product_id.rent_price_unity.id, line.product_id.rent_price, line.order_id.rent_duration_unity.id)
 
-            product_price_factor = UNITIES_FACTORS[product_price_unity][order_unity]
-
-            rent_price = self.get_rent_price(line, order_duration, order_unity,
-                product_price_unity, product_price_factor)
+            rent_price = self.get_rent_price(line, converted_rent_product_price)
             order_price = self.get_order_price(line)
-            line_price = (rent_price or order_price) * (1-line.discount/100.0)
+            real_unit_price = (rent_price or order_price) * (1-line.discount/100.0)
 
             result[line.id] = {
-                'rent_price' : rent_price,
-                'order_price' : order_price,
-                'line_price' : line_price * line.quantity,
-                'real_price' : line_price,
+                'line_price' : real_unit_price * line.quantity,
+                'real_unit_price' : real_unit_price,
             }
 
         return result
@@ -957,13 +944,12 @@ class RentOrderLine(osv.osv):
             'Taxes', readonly=True, states={'draft': [('readonly', False)]}),
         'notes' : fields.text('Notes'),
         'unit_price' : fields.float('Unit Price', required=True, states={'draft':[('readonly', False)]}, help=
-            'The price per duration or the sale price, depending of the product type.'),
-        'real_price' : fields.function(get_prices, method=True, multi=True, type="float", string="Price for duration",
+            'The price per duration or the sale price, depending of the product type. For rented product, the price '
+            'is expressed in the product rent unity, not the order rent unity.'),
+        'real_unit_price' : fields.function(get_prices, method=True, multi=True, type="float", string="Real Unit Price",
             help='This price correspond to the price of the product, not matter its type. In the case of a rented '
-                 'product, its equal to the price for the duration, and in the case of a service product, to the'
-                 'unit price of the product.'),
-        'rent_price' : fields.function(get_prices, method=True, multi=True, type="float", string="Price per duration"),
-        'order_price' : fields.function(get_prices, method=True, multi=True, type="float", string="Price at order"),
+                 'product, its equal to the unit price expressed in order duration unity, '
+                 'and in the case of a service product, to the sale price of the product.'),
         'line_price' : fields.function(get_prices, method=True, multi=True, type="float", string="Subtotal"),
     }
 
@@ -971,7 +957,7 @@ class RentOrderLine(osv.osv):
         'state' : STATES[0][0],
         'quantity' : 1,
         'discount' : 0.0,
-        'order_price' : 0.0,
+        'unit_price' : 0.0,
     }
 
     _sql_constraints = [

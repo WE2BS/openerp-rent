@@ -114,15 +114,16 @@ RentOrderRtz()
 
 class RentOrderRtzLine(osv.osv):
 
-    def get_rent_price(self, line, order_duration, order_unity, product_price_unity, product_price_factor):
+    def get_rent_price(self, line, rent_unit_price):
 
         """
-        We take the coeff field into account when computing the rent price.
+        Returns the rent price for the line.
         """
 
         if line.product_type != 'rent':
             return 0.0
-        return line.unit_price * product_price_factor * order_duration * line.coeff
+
+        return rent_unit_price * line.order_id.rent_duration * line.coeff
 
     def get_default_coeff(self, cursor, user_id, context=None):
         if context is None:

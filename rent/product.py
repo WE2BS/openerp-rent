@@ -60,7 +60,8 @@ class Product(osv.osv):
         Returns the price unity category of the user's company.
         """
 
-        return self.pool.get('res.users')._get_company(cr, uid, context=context)
+        company_id = self.pool.get('res.users')._get_company(cr, uid, context=context)
+        return self.pool.get('res.company').browse(cr, uid, company_id, context=context).rent_unity_category.id
 
     _name = 'product.product'
     _inherit = 'product.product'

@@ -56,7 +56,8 @@
                             <field name="date_begin_rent"/>
                             <field name="date_out_shipping"/>
                             <group colspan="4" col="6">
-                                <field name="rent_duration"/>
+                                <field name="rent_duration" />
+                                <!-- This field is here just to be used in the domain of rent_duration_unity -->
                                 <field name="rent_duration_unity_category" invisible="1"/>
                                 <field name="rent_duration_unity" domain="[('category_id', '=', rent_duration_unity_category)]"/>
                                 <field name="rent_invoice_period"/>
@@ -165,8 +166,7 @@
                     <field name="quantity"/>
                     <field name="product_id_uom"/>
                     <field name="discount"/>
-                    <field name="unit_price"/>
-                    <field name="real_price"/>
+                    <field name="real_unit_price"/>
                     <field name="line_price"/>
                     <field name="product_type"/>
                 </tree>
