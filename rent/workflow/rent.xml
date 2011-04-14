@@ -19,7 +19,7 @@
             <field name="wkf_id" ref="rent_workflow"/>
             <field name="name">confirmed</field>
             <field name="kind">function</field>
-            <field name="action">write({'state' : 'confirmed'})</field>
+            <field name="action">action_confirmed()</field>
             <field name="split_mode">OR</field>
         </record>
         <record id="state_invoices" model="workflow.activity">
@@ -75,12 +75,12 @@
         </record>
         <record id="confirmed_to_invoices" model="workflow.transition">
             <field name="act_from" ref="state_confirmed" />
-            <field name="act_to" ref="state_ship" />
+            <field name="act_to" ref="state_invoices" />
             <field name="condition">True</field>
         </record>
         <record id="confirmed_to_ship" model="workflow.transition">
             <field name="act_from" ref="state_confirmed" />
-            <field name="act_to" ref="state_invoices" />
+            <field name="act_to" ref="state_ship" />
             <field name="condition">True</field>
         </record>
         <record id="ship_to_ongoing" model="workflow.transition">

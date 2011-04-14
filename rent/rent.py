@@ -168,6 +168,29 @@ class RentOrder(osv.osv):
         
         return action
 
+    def action_confirmed(self, cr, uid, ids):
+
+        """
+        Called when the workflow goes to confirmed. Currently, the module only handles stockable/consummable products.
+        """
+
+        orders = self.browse(cr, uid, ids)
+        ok = False
+
+        for order in orders:
+            for line in order.rent_line_ids:
+                if line.product_type == 'rent':
+                    if line.product_id.type in ('consu', 'product'):
+                        ok = True
+
+        if not ok:
+            raise osv.except_osv('Error', "You must rent a least one stockable/consommable product, the module "
+                "doesn't support (yet) Service only rent.")
+
+        self.write(cr, uid, ids, {'state' : 'confirmed'})
+        
+        return True
+
     def action_generate_out_move(self, cr, uid, orders_ids):
 
         """
