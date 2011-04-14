@@ -27,7 +27,7 @@
     """
     This module is an extension to the rent module, to fill the need of the Rtz Evenement french company.
     """,
-    "depends": ["rent", "report_aeroo_ooo"],
+    "depends": ["rent", "report_aeroo_ooo", "stock", "account_accountant"],
     "init_xml": [],
     "demo_xml": [],
     "update_xml": ['views/rent.xml', 'reports/reports.xml'],
