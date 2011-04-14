@@ -132,6 +132,14 @@ class RentOrderRtzLine(osv.osv):
             return 1
         else:
             if context['duration'] in COEFF_MAPPING:
+                # We check that the duration unity is days, because Rtz only rent for days. If it rent for anything
+                # else that a day, we set the bigger coeff by default.
+                duration_unity_id = context['duration_unity']
+                duration_unity_xmlid = self.pool.get('product.uom').get_xml_id(
+                    cursor, user_id, [duration_unity_id], context=context)
+                duration_unity_xmlid = duration_unity_xmlid[duration_unity_id]
+                if not duration_unity_xmlid or duration_unity_xmlid != 'rent.uom_day':
+                    return COEFF_MAPPING['more']
                 return COEFF_MAPPING[context['duration']]
         return COEFF_MAPPING['more']
 

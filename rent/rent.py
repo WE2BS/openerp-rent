@@ -875,7 +875,7 @@ class RentOrderLine(osv.osv):
             invoice_line_data = {
                 'name': rent_line.description,
                 'account_id': invoice_line_account_id,
-                'price_unit': rent_line.unit_price,
+                'price_unit': rent_line.real_unit_price,
                 'quantity': rent_line.quantity,
                 'discount': rent_line.discount,
                 'product_id': rent_line.product_id.id or False,
