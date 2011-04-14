@@ -17,6 +17,25 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+def get_default_unity_category(obj, cr, uid, context=None):
+
+    user_company_id = obj.pool.get('res.users')._get_company(cr, uid)
+    unity_category_id = None
+
+    if user_company_id:
+        unity_category_id = obj.pool.get('res.company').browse(cr, uid,
+            user_company_id, context=context).rent_unity_category.id
+
+    if not unity_category_id:
+        data = openlib.Searcher(cr, uid, 'ir.model.data',
+            context=context, name='duration_uom_categ', module='rent').browse_one()
+        return data.res_id if data else None
+
+    return unity_category_id
+
 import rent
 import company
 import product
+import pooler
+import openlib
+

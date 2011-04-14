@@ -30,6 +30,8 @@ from tools.translate import _
 from tools.misc import cache, DEFAULT_SERVER_DATETIME_FORMAT
 from decimal_precision import get_precision
 
+from . import get_default_unity_category
+
 _logger = logging.getLogger('rent')
 
 UNITIES_FACTORS = {
@@ -611,24 +613,12 @@ class RentOrder(osv.osv):
         Returns the 1st UoM present into the default category.
         """
 
-        default_category_id = self.default_duration_unity_category(cr, uid, context)
+        default_category_id = get_default_unity_category(self, cr, uid, context)
         if default_category_id:
             return openlib.Searcher(cr, uid, 'product.uom', context=context,
                 category_id=default_category_id).browse_one().id
-        else:
-            _logger.error("You haven't defined a Rent Duration Unity Category in your company.")
 
-    def default_duration_unity_category(self, cr, uid, context=None):
-
-        """
-        Returns the default Product UoM Category of the duration unities.
-        """
-
-        default_company_id = self.pool.get('res.users')._get_company(cr, uid, context=context)
-        if not default_company_id:
-            _logger.error('Unable to get default company in default_duration_unity_category().')
-        else:
-            return self.pool.get('res.company').browse(cr, uid, default_company_id, context=context).rent_unity_category.id
+        _logger.warning('Unable to find a proper default duration category !')
 
     _name = 'rent.order'
     _sql_constraints = []
@@ -750,7 +740,7 @@ class RentOrder(osv.osv):
                 self.pool.get('ir.sequence').get(cr, uid, 'rent.order'),
         'rent_duration' : 1,
         'rent_duration_unity' : default_duration_unity,
-        'rent_duration_unity_category' : default_duration_unity_category,
+        'rent_duration_unity_category' : get_default_unity_category,
         'rent_invoice_period' : 'once',
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
         'discount' : 0.0,
