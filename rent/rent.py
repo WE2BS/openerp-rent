@@ -438,15 +438,14 @@ class RentOrder(osv.osv):
 
             for line in order.rent_line_ids:
 
-                # We map the tax_ids thanks to the fiscal position, if specified. Check account/partner.py
-                # for the map_tax function used to do the mapping.
+                # We map the tax_ids thanks to the fiscal position, if specified.
                 tax_ids = line.tax_ids
                 if order.fiscal_position.id:
                     tax_ids = tax_pool.browse(cr, uid, fiscal_position_pool.map_tax(
                         cr, uid, order.fiscal_position, tax_ids, context=context),context=context)
                 
                 # The compute_all function is defined in the account module  Take a look.
-                prices = tax_pool.compute_all(cr, uid, tax_ids, line.real_unit_price, line.quantity)
+                prices = tax_pool.compute_all(cr, uid, tax_ids, line.duration_unit_price, line.quantity)
 
                 total += prices['total']
                 total_with_taxes += prices['total_included']
@@ -810,7 +809,7 @@ class RentOrderLine(osv.osv):
             return 0.0
         return line.unit_price
         
-    def get_rent_price(self, line, rent_unit_price):
+    def get_rent_price(self, line, duration_unit_price):
 
         """
         Returns the rent price for the line.
@@ -819,7 +818,7 @@ class RentOrderLine(osv.osv):
         if line.product_type != 'rent':
             return 0.0
 
-        return rent_unit_price * line.order_id.rent_duration
+        return duration_unit_price * line.order_id.rent_duration
 
     def get_prices(self, cr, uid, ids, fields_name, arg, context):
 
@@ -832,19 +831,24 @@ class RentOrderLine(osv.osv):
 
         for line in lines:
 
-            # We convert the unit price of the product expressed in a unity (Day, Month, etc) into the unity
-            # of the rent order. A unit price of 1€/Day will become a unit price of 30€/Month if the
-            # order duration unity is in month. This price is not shown, just used in computation.
-            converted_rent_product_price = self.pool.get('product.uom')._compute_price(cr, uid,
-                line.product_id.rent_price_unity.id, line.product_id.rent_price, line.order_id.rent_duration_unity.id)
+            if line.product_type == 'rent':
+                # We convert the unit price of the product expressed in a unity (Day, Month, etc) into the unity
+                # of the rent order. A unit price of 1€/Day will become a unit price of 30€/Month.
+                converted_price = self.pool.get('product.uom')._compute_price(cr, uid,
+                    line.product_id.rent_price_unity.id, line.product_id.rent_price, line.order_id.rent_duration_unity.id)
+                real_unit_price = converted_price
+                duration_unit_price = self.get_rent_price(line, converted_price)
+            else:
+                real_unit_price = self.get_order_price(line)
+                duration_unit_price = real_unit_price
 
-            rent_price = self.get_rent_price(line, converted_rent_product_price)
-            order_price = self.get_order_price(line)
-            real_unit_price = (rent_price or order_price) * (1-line.discount/100.0)
+            # We apply the discount on the unit price
+            duration_unit_price *= (1-line.discount/100.0)
 
             result[line.id] = {
-                'line_price' : real_unit_price * line.quantity,
                 'real_unit_price' : real_unit_price,
+                'line_price' : duration_unit_price * line.quantity,
+                'duration_unit_price' : duration_unit_price,
             }
 
         return result
@@ -943,13 +947,15 @@ class RentOrderLine(osv.osv):
         'tax_ids': fields.many2many('account.tax', 'rent_order_line_taxes', 'rent_order_line_id', 'tax_id',
             'Taxes', readonly=True, states={'draft': [('readonly', False)]}),
         'notes' : fields.text('Notes'),
-        'unit_price' : fields.float('Unit Price', required=True, states={'draft':[('readonly', False)]}, help=
+        'unit_price' : fields.float('Product Unit Price', required=True, states={'draft':[('readonly', False)]}, help=
             'The price per duration or the sale price, depending of the product type. For rented product, the price '
-            'is expressed in the product rent unity, not the order rent unity.'),
-        'real_unit_price' : fields.function(get_prices, method=True, multi=True, type="float", string="Real Unit Price",
+            'is expressed in the product rent unity, not the order rent unity! BE CAREFUL!'),
+        'real_unit_price' : fields.function(get_prices, method=True, multi=True, type="float", string="Unit Price",
             help='This price correspond to the price of the product, not matter its type. In the case of a rented '
                  'product, its equal to the unit price expressed in order duration unity, '
                  'and in the case of a service product, to the sale price of the product.'),
+        'duration_unit_price' : fields.function(get_prices, method=True, multi=True, type="float", string="Duration Unit Price",
+            help='The price of ONE product for the entire duration.'),
         'line_price' : fields.function(get_prices, method=True, multi=True, type="float", string="Subtotal"),
     }
 

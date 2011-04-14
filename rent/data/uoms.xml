@@ -7,7 +7,10 @@
         <record id="uom_day" model="product.uom">
             <field name="name">Day</field>
             <field name="category_id" ref="duration_uom_categ"/>
-            <field name="factor" eval="365.0"/>
+            <!--
+                Because we consider a month is 30 days, we have to consider a year is 360 days (12*30).
+            -->
+            <field name="factor" eval="360.0"/>
             <field name="uom_type">smaller</field>
             <field name="rounding" eval="1.0"/>
         </record>

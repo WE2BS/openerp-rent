@@ -167,6 +167,7 @@
                     <field name="product_id_uom"/>
                     <field name="discount"/>
                     <field name="real_unit_price"/>
+                    <field name="duration_unit_price"/>
                     <field name="line_price"/>
                     <field name="product_type"/>
                 </tree>
