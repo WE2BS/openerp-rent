@@ -9,7 +9,7 @@
             <field name="model">rent.order</field>
             <field name="type">tree</field>
             <field name="arch" type="xml">
-                <tree string="Rent Orders">
+                <tree string="Rent Orders" colors="blue:state in ('draft');gray:state in ('cancelled');green:sate in ('done')">
                     <field name="ref"/>
                     <field name="date_created"/>
                     <field name="partner_id"/>
@@ -57,7 +57,8 @@
                             <field name="date_out_shipping"/>
                             <group colspan="4" col="6">
                                 <field name="rent_duration"/>
-                                <field name="rent_duration_unity"/>
+                                <field name="rent_duration_unity_category" invisible="1"/>
+                                <field name="rent_duration_unity" domain="[('category_id', '=', rent_duration_unity_category)]"/>
                                 <field name="rent_invoice_period"/>
                             </group>
                             <field name="description" colspan="4"/>

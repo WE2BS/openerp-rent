@@ -18,30 +18,26 @@
 #
 
 from osv import osv, fields
-from rent import UNITIES
-from tools.translate import _
+from openlib import Searcher
 
 class Company(osv.osv):
 
-    # We override the res.company model to add a configuration field which define
-    # the minimum rent time unity (Hour, Day, Month, Year).
-    #
-    # All rent duration will be multiple of this unity. For example, if you set it to 'Day',
-    # and you rent a product for 2 Months, it will be ~60 days.
-    #
-    # The price defined on products is the price for 1 time unity.
+    def default_unity_category(self, cr, uid, context=None):
+        # Please note that this default value won't be applied to
+        # existing companies, because when the module is loaded,
+        # the XMLID is not defined yet in ir.model.data.
+        data = Searcher(cr, uid, 'ir.model.data', context=context,
+            name='duration_uom_categ', module='rent').browse_one()
+        return data.res_id if data else False
 
     _inherit = 'res.company'
     _name = 'res.company'
     _columns = {
-        'rent_unity' : fields.selection(UNITIES, _('Rent minimal unity'),
-            help=_("This will define the minimum rent unity. "
-                   "You won't be able to rent a product for less that one of this unity. "
-                   "Products prices will also be defined for this unity."),
-            required=True)
+        'rent_unity_category' : fields.many2one('product.uom.categ', string='Rent Duration Category',
+            help="The category of products used for renting durations.", required=True)
     }
     _defaults = {
-        'rent_unity' : 'day'
+        'rent_unity_category' : default_unity_category,
     }
 
 Company()

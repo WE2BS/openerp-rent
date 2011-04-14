@@ -17,22 +17,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import logging
+
 from osv import osv, fields
 from tools.translate import _
+from openlib import Searcher
 
-from rent import UNITIES
-
-def get_unity_display(name):
-    for key, value in UNITIES:
-        if key == name:
-            return value
-    raise Exception('Invalid unity key.')
+_logger = logging.getLogger('rent')
 
 class Product(osv.osv):
-
-    # Extends the basic product.product model :
-    #    - Add a 'can_be_rent' field.
-    #    - The price for the rent.
 
     def check_rent_price(self, cursor, user_id, ids, context=None):
 
@@ -43,41 +36,49 @@ class Product(osv.osv):
         products = self.browse(cursor, user_id, ids, context=context)
 
         for product in products:
-
             if product.can_be_rent:
                 if not product.rent_price or product.rent_price <= 0:
                     return False
-
         return True
 
-    def fields_get(self, cr, user, fields=None, context=None):
+    def default_price_unity(self, cr, uid, context=None):
 
-        # We override this method to change the rent_price label on-the-fly.
-        # For example, if 'Day' was selected on the company duration unity,
-        # the label will be 'Rent price (in Day)'.
+        """
+        Returns the default price unity (the first in the list).
+        """
 
-        result = super(osv.osv, self).fields_get(cr, user, fields, context)
-        unity = self.pool.get(
-            'res.users').browse(cr, user, user, context=context).company_id.rent_unity
+        category_id = self.default_price_unity_category(cr, uid, context=context)
+        if not category_id:
+            _logger.error("Your company isn't configured correctly. Please define 'rent_unity_category'.")
+        else:
+            unity = Searcher(cr, uid, 'product.uom', context=context, category_id=category_id).browse_one()
+            return unity.id if unity else False
 
-        if 'rent_price' in result:
-            result['rent_price']['string'] = result['rent_price']['string'] % get_unity_display(unity)
+    def default_price_unity_category(self, cr, uid, context=None):
 
-        return result
+        """
+        Returns the price unity category of the user's company.
+        """
+
+        return self.pool.get('res.users')._get_company(cr, uid, context=context)
 
     _name = 'product.product'
     _inherit = 'product.product'
 
     _columns = {
-        'can_be_rent' : fields.boolean(_('Can be rented'), help=_(
-            'Enable this if you want to rent this product.')),
-        'rent_price' : fields.float(_('Rent price (per %s)'), help=_(
-            'The price is expressed for the duration unity defined in the company configuration.')),
+        'can_be_rent' : fields.boolean('Can be rented', help='Enable this if you want to rent this product.'),
+        'rent_price' : fields.float('Rent price', help=
+            'The price is expressed for the duration unity defined in the company configuration.'),
+        'rent_price_unity' : fields.many2one('product.uom', 'Rent Price Unity',
+            help='Rent duration unity in which the price is defined.', required=True),
+        'rent_price_unity_category' : fields.many2one('product.uom.categ', readonly=True, required=True)
     }
 
     _defaults = {
         'can_be_rent' : False,
-        'rent_price' : 0.0,
+        'rent_price' : 1.0,
+        'rent_price_unity' : default_price_unity,
+        'rent_price_unity_category' : default_price_unity_category,
     }
 
     _constraints = [(check_rent_price, _('The Rent price must be a positive value.'), ['rent_price']),]
