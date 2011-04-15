@@ -636,7 +636,14 @@ class RentOrder(osv.osv):
         'date_created' : fields.datetime('Date', readonly=True, required=True,
             states={'draft': [('readonly', False)]}, help='Date of the creation of this order.'),
         'date_begin_rent' : fields.datetime('Rent begin date', required=True,
-            readonly=True, states={'draft' : [('readonly', False)]}, help='Date of the begin of the leasing.'),
+            readonly=True, states={'draft' : [('readonly', False)]}, help='Date of the begin of the leasing.',
+            store={
+                'rent.order' : (
+                    lambda self, cr, uid, ids, context: ids,
+                    ['rent_duration', 'rent_duration_unity'],
+                    10,
+                )
+            }),
         'date_end_rent' : fields.function(get_end_date, type="datetime", method=True, string="Rent end date"),
         'rent_duration_unity_category' : fields.many2one('product.uom.categ', string='Duration Unity Category',
             readonly=True, required=True),

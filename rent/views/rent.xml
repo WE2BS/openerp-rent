@@ -2,6 +2,21 @@
 <openerp>
     <data>
         <!--
+            Rent Order Calendar view
+        -->
+        <record model="ir.ui.view" id="rent_order_calendar_view">
+            <field name="name">rent.order.calendar</field>
+            <field name="model">rent.order</field>
+            <field name="type">calendar</field>
+            <field name="arch" type="xml">
+                <calendar string="Rent Orders" color="partner_id" date_start="date_begin_rent" date_stop="date_end_rent">
+                    <field name="partner_id"/>
+                    <field name="description"/>
+                </calendar>
+            </field>
+        </record>
+
+        <!--
             Rent Order tree view
         -->
         <record model="ir.ui.view" id="rent_order_tree_view">

@@ -5,7 +5,7 @@
             <field name="name">Rent Order</field>
             <field name="res_model">rent.order</field>
             <field name="view_type">form</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">tree,form,calendar</field>
             <field name="usage">menu</field>
             <field name="search_view_id" ref="rent_order_search_view"/>
         </record>
