@@ -36,19 +36,11 @@
                 <field name="date_begin_rent" position="attributes">
                     <attribute name="widget">date</attribute>
                 </field>
-            </field>
-        </record>
-        <record model="ir.ui.view" id="rent_order_rtz_form_view">
-            <field name="name">rent.order.rtz.form.view</field>
-            <field name="model">rent.order</field>
-            <field name="inherit_id" ref="rent.rent_order_form_view"/>
-            <field name="type">form</field>
-            <field name="arch" type="xml">
-            	 <field name="rent_invoice_period" position="before">
+              	 <field name="rent_invoice_period" position="before">
                 	  <field name="date_back_shipping"/>
                 </field>
             </field>
-        </record>       
+        </record>
         <!--
             Rent Order Line
         -->
