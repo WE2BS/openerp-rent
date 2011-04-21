@@ -68,13 +68,16 @@
                                    domain="[('partner_id', '=', partner_id)]"/>
                             <field name="partner_invoice_address_id" groups="base.group_extended"
                                    domain="[('partner_id', '=', partner_id)]"/>
-                            <field name="date_begin_rent"/>
-                            <field name="date_out_shipping"/>
                             <group colspan="4" col="6">
-                                <field name="rent_duration" />
+                                <field name="date_begin_rent"/>
+                                <field name="date_out_shipping"/>
+                                <field name="date_in_shipping"/>
+                                <field name="rent_duration"
+                                    on_change="on_duration_changed(date_begin_rent,rent_duration,rent_duration_unity,context)"/>
                                 <!-- This field is here just to be used in the domain of rent_duration_unity -->
                                 <field name="rent_duration_unity_category" invisible="1"/>
-                                <field name="rent_duration_unity" domain="[('category_id', '=', rent_duration_unity_category)]"/>
+                                <field name="rent_duration_unity" domain="[('category_id', '=', rent_duration_unity_category)]"
+                                    on_change="on_duration_changed(date_begin_rent,rent_duration,rent_duration_unity,context)"/>
                                 <field name="rent_invoice_period"/>
                             </group>
                             <field name="description" colspan="4"/>

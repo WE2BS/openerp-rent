@@ -58,13 +58,15 @@ COEFF_MAPPING = {
 
 class RentOrderRtz(osv.osv):
 
+    _inherit = 'rent.order'
+
     def get_invoice_comment(self, cursor, user_id, order, date, current, max, period_begin, period_end):
 
         """
         This method is overriden from rent.order object to only show dates, not times.
         """
 
-        # We use the lang of the partner instead of the lang of the user tu put the text into the invoice.
+        # We use the lang of the partner instead of the lang of the user to put the text into the invoice.
         context = {'lang' : openlib.get_partner_lang(cursor, user_id, order.partner_id).code}
         
         partner_lang = openlib.partner.get_partner_lang(cursor, user_id, order.partner_id)
@@ -85,59 +87,7 @@ class RentOrderRtz(osv.osv):
             current,
             max,
         )
-    
-    def get_products_buy_price(self, cursor, user_id, ids, field_name, args, context=None):
 
-        """
-        Returns the total of the buy price of the products. This is used to evaluate the price
-        of the rented products, in case of problems with assurances.
-        """
-
-        orders = self.browse(cursor, user_id, ids, context=context)
-        result = {}
-
-        for order in orders:
-            total = 0
-            for line in order.rent_line_ids:
-                total += line.product_id.product_tmpl_id.standard_price * line.quantity
-            result[order.id] = total
-
-        return result
-         
-    def get_products_list_price(self, cursor, user_id, ids, field_name, args, context=None):
-
-        """
-        Fonction for a more realistic cost for customers who have problems to return our products
-        Returns the total of the sell price with taxes of the products. This is used to evaluate the price
-        of the rented products, in case of problems with assurances.
-        """
-
-        orders = self.browse(cursor, user_id, ids, context=context)
-        result = {}
-
-        for order in orders:
-            total = 0
-            for line in order.rent_line_ids:
-                total += line.product_id.product_tmpl_id.list_price * line.quantity * 1.196
-            result[order.id] = total
-
-        return result
-        
-    _inherit = 'rent.order'
-
-    _columns = {
-        'total_products_buy_price' : fields.function(get_products_buy_price, type="float",
-            string=_('Total products buy price'), method=True),
-        'total_products_list_price' : fields.function(get_products_list_price, type="float",
-            string=_('Total products list price'), method=True),
-        'date_back_shipping' : fields.datetime('Products back date', readonly=True, required=True,
-            states={'draft': [('readonly', False)]}, help='Date of products back.'),
-    }
-    _defaults = {
-        'date_back_shipping': fields.datetime.now,
-      
-    }
-    
 RentOrderRtz()
 
 class RentOrderRtzLine(osv.osv):

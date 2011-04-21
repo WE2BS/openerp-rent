@@ -121,6 +121,37 @@ class RentOrder(osv.osv):
 
         return { 'value' : result }
 
+    def on_duration_changed(self, cr, uid, ids, rent_begin, duration, duration_unity_id, context=None):
+
+        """
+        This method is called when the duration or duration unity changed. Input shipping date
+        is updated to be set at the end of the duration automatically.
+        """
+
+        if not rent_begin or not duration or not duration_unity_id:
+            return {}
+        
+        # Converts the duration in days and add these days to the rent input shipping date
+        day_unity = openlib.Searcher(cr, uid, 'product.uom', context=context,
+            category_id__xmlid='rent.duration_uom_categ', name='Day').browse_one()
+        days = self.pool.get('product.uom')._compute_qty(cr, uid,
+            duration_unity_id, duration, day_unity.id)
+
+        # Depending of the widget, the begin date can be a date or a datetime
+        try:
+            begin = openlib.to_datetime(rent_begin)
+        except ValueError:
+            try:
+                begin = openlib.to_date(rent_begin)
+            except ValueError:
+                raise osv.except_osv('Begin date have an invalid format.')
+
+        end = begin + datetime.timedelta(days=days-1) # We remove 1 day to set the return date the same day that the rent end date
+        end = end.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+
+        return {'value' : {'date_in_shipping' : end}}
+
+
     def on_draft_clicked(self, cr, uid, ids, context=None):
 
         """
@@ -274,8 +305,8 @@ class RentOrder(osv.osv):
     def action_ongoing(self, cr, uid, ids):
 
         """
-        We switch to ongoing state when the out picking has been confirmed,
-        and invoices have been generated. We have to generate the input picking.
+        We switch to ongoing state when the out picking has been confirmed.
+        We have to generate the input picking.
         """
 
         orders = self.browse(cr, uid, ids)
@@ -300,7 +331,7 @@ class RentOrder(osv.osv):
                     'picking_id': in_picking_id,
                     'product_id': line.product_id.id,
                     'date': time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
-                    'date_expected': order.date_end_rent,
+                    'date_expected': order.date_in_shipping,
                     'product_qty': line.product_qty,
                     'product_uom': line.product_uom.id,
                     'product_uos' : line.product_uos.id,
@@ -460,6 +491,8 @@ class RentOrder(osv.osv):
             total_with_taxes = 0.0
             total_taxes = 0.0
             total_taxes_with_discount = 0.0
+            total_buy_price = 0
+            total_sell_price = 0
 
             for line in order.rent_line_ids:
 
@@ -471,6 +504,11 @@ class RentOrder(osv.osv):
                 
                 # The compute_all function is defined in the account module  Take a look.
                 prices = tax_pool.compute_all(cr, uid, tax_ids, line.duration_unit_price, line.quantity)
+
+                total_buy_price += tax_pool.compute_all(cr, uid, tax_ids,
+                    line.product_id.product_tmpl_id.standard_price, line.quantity)['total_included']
+                total_sell_price += tax_pool.compute_all(cr, uid, tax_ids,
+                    line.product_id.product_tmpl_id.list_price, line.quantity)['total_included']
 
                 total += prices['total']
                 total_with_taxes += prices['total_included']
@@ -490,6 +528,8 @@ class RentOrder(osv.osv):
                 'total_taxes_with_discount' : total_taxes_with_discount,
                 'total_with_discount' : total_with_discount,
                 'total_with_taxes_with_discount' : total_with_taxes_with_discount,
+                'total_products_buy_price' : total_buy_price,
+                'total_products_sell_price' : total_sell_price,
             }
 
         return result
@@ -580,6 +620,39 @@ class RentOrder(osv.osv):
         return [self.get_invoice_at(cr, uid, order,
             order.date_begin_rent, 1, 1, order.date_begin_rent, order.date_end_rent)]
 
+    def get_products_buy_price(self, cr, uid, ids, field_name, args, context=None):
+
+        """
+        Returns the total of the buy price of all products. This is used to evaluate the price
+        of the rented products, in case of problems with assurances.
+        """
+
+        orders = self.browse(cr, uid, ids, context=context)
+        result = {}
+
+        for order in orders:
+            total = 0
+            for line in order.rent_line_ids:
+                buy_price_untaxed = line.product_id.product_tmpl_id.standard_price
+                total += line.product_id.product_tmpl_id.standard_price * line.quantity
+            result[order.id] = total
+
+        return result
+
+    def get_products_sell_price(self, cr, uid, ids, field_name, args, context=None):
+
+        """
+        Returns the total of sell price of all products. This is used to evaluate the price
+        of the rented products, in case of problems with assurances.
+        """
+
+        orders = self.browse(cr, uid, ids, context=context)
+        result = {}
+
+
+
+        return result
+
     def test_have_invoices(self, cr, uid, ids, *args):
 
         """
@@ -636,15 +709,9 @@ class RentOrder(osv.osv):
         'date_created' : fields.datetime('Date', readonly=True, required=True,
             states={'draft': [('readonly', False)]}, help='Date of the creation of this order.'),
         'date_begin_rent' : fields.datetime('Rent begin date', required=True,
-            readonly=True, states={'draft' : [('readonly', False)]}, help='Date of the begin of the leasing.',
-            store={
-                'rent.order' : (
-                    lambda self, cr, uid, ids, context: ids,
-                    ['rent_duration', 'rent_duration_unity'],
-                    10,
-                )
-            }),
-        'date_end_rent' : fields.function(get_end_date, type="datetime", method=True, string="Rent end date"),
+            readonly=True, states={'draft' : [('readonly', False)]}, help='Date of the begin of the leasing.'),
+        'date_end_rent' : fields.function(get_end_date, type="datetime", method=True, string="Rent end date",
+            store={ 'rent.order' : (lambda self, cr, uid, ids, context: ids, ['rent_duration', 'rent_duration_unity'],10,)}),
         'rent_duration_unity_category' : fields.many2one('product.uom.categ', string='Duration Unity Category',
             readonly=True, required=True),
         'rent_duration_unity' : fields.many2one('product.uom', string='Unity',
@@ -690,6 +757,8 @@ class RentOrder(osv.osv):
             'Invoiced percent, calculated on the numver if invoices confirmed.', method=True),
         'date_out_shipping' : fields.datetime('Shipping date', readonly=True, required=True,
             states={'draft': [('readonly', False)]}, help='Date of the shipping.'),
+        'date_in_shipping' : fields.datetime('Return date', readonly=True, required=True,
+            states={'draft': [('readonly', False)]}, help='Date of products return.'),
         'out_picking_id' : fields.many2one('stock.picking', 'Output picking id', help=
             'The picking object which handle Stock->Client moves.', ondelete='RESTRICT'),
         'in_picking_id' : fields.many2one('stock.picking', 'Input picking id', help=
@@ -732,6 +801,12 @@ class RentOrder(osv.osv):
                 'rent.order.line' : (get_order_from_lines, None, 10),
                 'rent.order' : (lambda *a: a[3], None, 10),
             }),
+        'total_products_buy_price' : fields.function(get_totals, multi=True, type="float",
+            string='Products buy price', method=True, digits_compute=get_precision('Sale Price'),
+            store={'rent.order.line' : (get_order_from_lines, None, 10),}),
+        'total_products_sell_price' : fields.function(get_totals, multi=True, type="float",
+            string='Products sell price', method=True, digits_compute=get_precision('Sale Price'),
+            store={'rent.order.line' : (get_order_from_lines, None, 10),}),
     }
 
     _defaults = {
