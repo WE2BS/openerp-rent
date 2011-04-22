@@ -30,12 +30,12 @@
                 <field name="date_created" position="attributes">
                     <attribute name="widget">date</attribute>
                 </field>
-                <!--<field name="date_out_shipping" position="attributes">
+                <field name="date_out_shipping" position="attributes">
                     <attribute name="widget">date</attribute>
                 </field>
                 <field name="date_in_shipping" position="attributes">
                     <attribute name="widget">date</attribute>
-                </field>-->
+                </field>
                 <field name="date_begin_rent" position="attributes">
                     <attribute name="widget">date</attribute>
                 </field>
