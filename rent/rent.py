@@ -323,7 +323,6 @@ class RentOrder(osv.osv):
         """
 
         orders = self.browse(cr, uid, ids)
-        print context
 
         for order in orders:
 

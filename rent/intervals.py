@@ -36,7 +36,7 @@ class InvoiceInterval(osv.osv):
 
     _name = 'rent.interval'
     _columns = {
-        'name' : fields.char('Name', size=150, required=True),
+        'name' : fields.char('Name', size=150, required=True, translate=True),
         'method' : fields.char('Method', size=255, required=True),
     }
 
