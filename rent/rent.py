@@ -30,27 +30,7 @@ from tools.translate import _
 from tools.misc import cache, DEFAULT_SERVER_DATETIME_FORMAT
 from decimal_precision import get_precision
 
-from . import get_default_unity_category
-
 _logger = logging.getLogger('rent')
-
-UNITIES_FACTORS = {
-    'day' : {
-        'day' : 1.0,
-        'month' : 30.0,
-        'year' : 365.0,
-    },
-    'month' : {
-        'day' : 1.0/30,
-        'month' : 1.0,
-        'year' : 12.0,
-    },
-    'year' : {
-        'day' : 1.0/365,
-        'month' : 1.0/30,
-        'year' : 1,
-    }
-}
 
 STATES = (
     ('draft', 'Quotation'), # Default state
@@ -683,15 +663,17 @@ class RentOrder(osv.osv):
     def default_duration_unity(self, cr, uid, context=None):
 
         """
-        Returns the 1st UoM present into the default category.
+        Returns the 1st UoM present into the Duration category.
         """
 
-        default_category_id = get_default_unity_category(self, cr, uid, context)
-        if default_category_id:
-            return openlib.Searcher(cr, uid, 'product.uom', context=context,
-                category_id=default_category_id).browse_one().id
+        unity = openlib.Searcher(cr, uid, 'product.uom', context=context,
+            category_id__name='Duration').browse_one()
 
-        _logger.warning('Unable to find a proper default duration category !')
+        if not unity:
+            _logger.warning("It seems that there isn't a reference unity in the 'Duration' UoM category. "
+                            "Please check that the category exists, and there's a reference unity.")
+
+        return unity.id if unity else False
 
     _name = 'rent.order'
     _sql_constraints = []
@@ -712,9 +694,7 @@ class RentOrder(osv.osv):
             readonly=True, states={'draft' : [('readonly', False)]}, help='Date of the begin of the leasing.'),
         'date_end_rent' : fields.function(get_end_date, type="datetime", method=True, string="Rent end date",
             store={ 'rent.order' : (lambda self, cr, uid, ids, context: ids, ['rent_duration', 'rent_duration_unity'],10,)}),
-        'rent_duration_unity_category' : fields.many2one('product.uom.categ', string='Duration Unity Category',
-            readonly=True, required=True),
-        'rent_duration_unity' : fields.many2one('product.uom', string='Unity',
+        'rent_duration_unity' : fields.many2one('product.uom', string='Unity', domain=[('category_id.name', '=', 'Duration')],
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=
             'The duration unity, available choices depends of your company configuration.'),
         'rent_duration' : fields.integer('Duration',
@@ -822,7 +802,6 @@ class RentOrder(osv.osv):
                 self.pool.get('ir.sequence').get(cr, uid, 'rent.order'),
         'rent_duration' : 1,
         'rent_duration_unity' : default_duration_unity,
-        'rent_duration_unity_category' : get_default_unity_category,
         'rent_invoice_period' : 'once',
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
         'discount' : 0.0,

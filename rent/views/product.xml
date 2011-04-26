@@ -20,9 +20,8 @@
                     <group  colspan="2" col="3">
                     <field name="rent_price" string="Rent Price"
                            attrs="{'readonly' : [('can_be_rent', '=', False)], 'required' : [('can_be_rent', '=', True)]}"/>
-                    <field name="rent_price_unity" domain="[('category_id', '=', rent_price_unity_category)]" nolabel="1"
+                    <field name="rent_price_unity" nolabel="1"
                            attrs="{'readonly' : [('can_be_rent', '=', False)], 'required' : [('can_be_rent', '=', True)]}"/>
-                    <field name="rent_price_unity_category" invisible="1"/>
                     </group>
                 </field>
             </field>

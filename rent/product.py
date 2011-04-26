@@ -23,8 +23,6 @@ from osv import osv, fields
 from tools.translate import _
 from openlib import Searcher
 
-from . import get_default_unity_category
-
 _logger = logging.getLogger('rent')
 
 class Product(osv.osv):
@@ -49,12 +47,14 @@ class Product(osv.osv):
         Returns the default price unity (the first in the list).
         """
 
-        category_id = get_default_unity_category(self, cr, uid, context=context)
-        if not category_id:
-            _logger.error("Your company isn't configured correctly. Please define 'rent_unity_category'.")
-        else:
-            unity = Searcher(cr, uid, 'product.uom', context=context, category_id=category_id).browse_one()
-            return unity.id if unity else False
+        unity = Searcher(cr, uid, 'product.uom', context=context,
+            category_id__name='Duration').browse_one()
+
+        if not unity:
+            _logger.warning("It seems that there isn't a reference unity in the 'Duration' UoM category. "
+                            "Please check that the category exists, and there's a refernce unity.")
+        
+        return unity.id if unity else False
 
     _name = 'product.product'
     _inherit = 'product.product'
@@ -63,16 +63,14 @@ class Product(osv.osv):
         'can_be_rent' : fields.boolean('Can be rented', help='Enable this if you want to rent this product.'),
         'rent_price' : fields.float('Rent price', help=
             'The price is expressed for the duration unity defined in the company configuration.'),
-        'rent_price_unity' : fields.many2one('product.uom', 'Rent Price Unity',
+        'rent_price_unity' : fields.many2one('product.uom', 'Rent Price Unity', domain=[('category_id.name', '=', 'Duration')],
             help='Rent duration unity in which the price is defined.', required=True),
-        'rent_price_unity_category' : fields.many2one('product.uom.categ', readonly=True, required=True)
     }
 
     _defaults = {
         'can_be_rent' : False,
         'rent_price' : 1.0,
         'rent_price_unity' : default_price_unity,
-        'rent_price_unity_category' : get_default_unity_category,
     }
 
     _constraints = [(check_rent_price, _('The Rent price must be a positive value.'), ['rent_price']),]
