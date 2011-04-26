@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="interval_once" model="rent.interval">
+            <field name="name">Once</field>
+            <field name="method">get_invoice_for_once_period</field>
+        </record>
+    </data>
+</openerp>

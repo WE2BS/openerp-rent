@@ -19,5 +19,6 @@
 
 import rent
 import product
+import intervals
 
 

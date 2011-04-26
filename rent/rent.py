@@ -51,24 +51,6 @@ class RentOrder(osv.osv):
     # is really different, and there is a notion of duration. I decided to not inherit
     # sale.order because there were a lot of useless things for a Rent Order.
 
-    @classmethod
-    def register_invoice_period(cls, name, showed_name, method_name):
-
-        """
-        Register an invoice period and associate it a function.
-
-        The method must accept these arguments :
-            def get_invoices_for_monthly_period(self, cr, uid, order)
-        And must return a dict of dates of invoices to generate.
-
-        The order argument is the order object returned by a browse(). You can access it's data for checks.
-        If there is any problem, the function can raise an osv.except_osc exception, which will abort invoice generation.
-        """
-
-        if not hasattr(cls, method_name):
-            raise RuntimeError('Unkown method %s in register_invoice_period().' % method_name)
-        cls._periods[name] = (showed_name, method_name)
-
     def on_client_changed(self, cr, uid, ids, client_id):
 
         """
@@ -334,21 +316,24 @@ class RentOrder(osv.osv):
         
         return True
 
-    def action_generate_invoices(self, cr, uid, ids):
+    def action_generate_invoices(self, cr, uid, ids, context=None):
 
         """
-        This action is called by the workflow activity 'ongoing'. We generate an invoice for the duration period.
-        The interval is the duration unity : if you rent for 2 Month, there will be 2 invoices.
+        This action is called by the workflow activity 'ongoing'. We generate invoices for the duration period.
         """
 
         orders = self.browse(cr, uid, ids)
+        print context
 
         for order in orders:
 
-            period_function = self._periods[order.rent_invoice_period][1]
+            period_function = order.rent_invoice_period.method
             period_function = getattr(self, period_function)
 
-            invoices_id = period_function(cr, uid, order)
+            if not period_function:
+                raise osv.except_osv('Programming Error', 'The invoice interval method "%s" does not exist.')
+
+            invoices_id = period_function(cr, uid, order, context)
 
         self.write(cr, uid, ids, {'invoices_ids' : [(6, 0, invoices_id)]})
 
@@ -525,12 +510,13 @@ class RentOrder(osv.osv):
 
         partner_lang = openlib.partner.get_partner_lang(cr, uid, order.partner_id)
         datetime_format = partner_lang.date_format + _(' at ') + partner_lang.time_format
+        datetime_format = datetime_format.encode('utf-8')
 
-        begin_date = openlib.to_datetime(order.date_begin_rent).strftime(datetime_format)
-        end_date = openlib.to_datetime(order.date_end_rent).strftime(datetime_format)
+        begin_date = openlib.to_datetime(order.date_begin_rent).strftime(datetime_format).decode('utf-8')
+        end_date = openlib.to_datetime(order.date_end_rent).strftime(datetime_format).decode('utf-8')
 
-        period_begin = openlib.to_datetime(period_begin).strftime(datetime_format)
-        period_end = openlib.to_datetime(period_end).strftime(datetime_format)
+        period_begin = openlib.to_datetime(period_begin).strftime(datetime_format).decode('utf-8')
+        period_end = openlib.to_datetime(period_end).strftime(datetime_format).decode('utf-8')
 
         return _(
             "Rental from %s to %s, invoice %d/%d.\n"
@@ -583,15 +569,7 @@ class RentOrder(osv.osv):
 
         return invoice_id
 
-    def get_invoice_periods(self, cr, uid, context=None):
-
-        """
-        Returns a list of available periods (which have been registered with register_invoice_period()).
-        """
-
-        return [(period, self._periods[period][0]) for period in self._periods]
-
-    def get_invoices_for_once_period(self, cr, uid, order):
+    def get_invoice_for_once_period(self, cr, uid, order, context=None):
 
         """
         Generates only one invoice (at the end of the rent).
@@ -675,6 +653,15 @@ class RentOrder(osv.osv):
 
         return unity.id if unity else False
 
+    def default_invoice_period(self, cr, uid, context=None):
+
+        """
+        Returns the 1st available interval.
+        """
+
+        interval = openlib.Searcher(cr, uid, 'rent.interval', context=context).browse_one()
+        return interval.id if interval else False
+
     _name = 'rent.order'
     _sql_constraints = []
     _rec_name = 'ref'
@@ -700,7 +687,7 @@ class RentOrder(osv.osv):
         'rent_duration' : fields.integer('Duration',
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help=
             'The duration of the lease, expressed in selected unit.'),
-        'rent_invoice_period' : fields.selection(get_invoice_periods, 'Invoice Period',
+        'rent_invoice_period' : fields.many2one('rent.interval', 'Invoice Period',
             required=True, readonly=True, states={'draft' : [('readonly', False)]}, help='Period between invoices'),
         'salesman' : fields.many2one('res.users', 'Salesman', ondelete='SET NULL',
             readonly=True, states={'draft' : [('readonly', False)]}, help=
@@ -802,7 +789,7 @@ class RentOrder(osv.osv):
                 self.pool.get('ir.sequence').get(cr, uid, 'rent.order'),
         'rent_duration' : 1,
         'rent_duration_unity' : default_duration_unity,
-        'rent_invoice_period' : 'once',
+        'rent_invoice_period' : default_invoice_period,
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
         'discount' : 0.0,
     }
@@ -814,13 +801,6 @@ class RentOrder(osv.osv):
         ('begin_after_create', 'check(date_begin_rent >= date_created)', 'The begin date must later than the order date.'),
         ('valid_discount', 'check(discount >= 0 AND discount <= 100)', 'Discount must be a value between 0 and 100.'),
     ]
-
-# We register invoice periods for Rent orders.
-# See the doc of register_invoice_period for more informations.
-RentOrder.register_invoice_period('once', 'Once', 'get_invoices_for_once_period')
-#RentOrder.register_invoice_period('monthly', _('Monthly'))
-#RentOrder.register_invoice_period('quaterly', _('Quaterly'))
-#RentOrder.register_invoice_period('yearly', _('Yearly'))
 
 class RentOrderLine(osv.osv):
 
