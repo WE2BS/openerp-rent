@@ -64,7 +64,7 @@ class Product(osv.osv):
         'rent_price' : fields.float('Rent price', help=
             'The price is expressed for the duration unity defined in the company configuration.'),
         'rent_price_unity' : fields.many2one('product.uom', 'Rent Price Unity', domain=[('category_id.name', '=', 'Duration')],
-            help='Rent duration unity in which the price is defined.', required=True),
+            help='Rent duration unity in which the price is defined.'),
     }
 
     _defaults = {
