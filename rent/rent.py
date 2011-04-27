@@ -85,7 +85,7 @@ class RentOrder(osv.osv):
 
         return { 'value' : result }
 
-    def on_duration_changed(self, cr, uid, ids, rent_begin, duration, duration_unity_id, context=None):
+    def on_duration_changed(self, cr, uid, ids, rent_begin, duration, duration_unity_id, shop_id, context=None):
 
         """
         This method is called when the duration or duration unity changed. Input shipping date
@@ -100,6 +100,7 @@ class RentOrder(osv.osv):
             category_id__xmlid='rent.duration_uom_categ', name='Day').browse_one()
         days = self.pool.get('product.uom')._compute_qty(cr, uid,
             duration_unity_id, duration, day_unity.id)
+        company = self.pool.get('sale.shop').browse(cr, uid, shop_id, context=context).company_id
 
         # Depending of the widget, the begin date can be a date or a datetime
         try:
@@ -111,6 +112,7 @@ class RentOrder(osv.osv):
                 raise osv.except_osv('Begin date have an invalid format.')
 
         end = begin + datetime.timedelta(days=days-1) # We remove 1 day to set the return date the same day that the rent end date
+        end = datetime.datetime.combine(end.date(), openlib.to_time(company.rent_afternoon_end))
         end = end.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 
         return {'value' : {'date_in_shipping' : end}}
@@ -398,7 +400,7 @@ class RentOrder(osv.osv):
     def get_end_date(self, cr, uid, ids, field_name, arg, context=None):
 
         """
-        Returns the rent order end date, based on the duration.
+        Returns the rent order end date, based on the duration and the company configuration
         """
 
         orders = self.browse(cr, uid, ids, context=context)
@@ -415,7 +417,11 @@ class RentOrder(osv.osv):
             days = self.pool.get('product.uom')._compute_qty(cr, uid,
                 order.rent_duration_unity.id, duration, day_unity.id)
 
-            end = begin + datetime.timedelta(days=days-1) # Removed one day to have a more realistic duration
+            # Removed one day to have a more realistic duration: In the case of a 1 day duration
+            # we except the customer to bring the products the same day !
+            end = begin + datetime.timedelta(days=days-1)
+            # We set the end time to the end of the day !
+            end = datetime.datetime.combine(end.date(), openlib.to_time(order.company_id.rent_afternoon_end))
             end = end.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 
             result[order.id] = end
@@ -663,6 +669,42 @@ class RentOrder(osv.osv):
         interval = openlib.Searcher(cr, uid, 'rent.interval', context=context).browse_one()
         return interval.id if interval else False
 
+    def default_begin_rent(self, cr, uid, context=None):
+
+        """
+        Returns the default begin rent datetime. The user can configure its default behavior in it company :
+
+            - Today: When the rent order is created, the begin date is set to today by defaut, at afternoon.
+            - Tomorrow (Morning): When the rent order is created, the begin date is set the tomorrow morning
+            - Tomorrow (Afternoon): Same but afternoon
+            - Empty: No default values
+        """
+
+        now = datetime.datetime.now()
+        company = self.pool.get('res.users').browse(cr, uid, uid, context=context).company_id
+
+        rent_afternoon_begin = openlib.to_time(company.rent_afternoon_begin)
+        rent_morning_begin = openlib.to_time(company.rent_morning_begin)
+
+        if company.rent_default_begin == 'today':
+            # If we are in the morning, we set the begin at afternoon, else, we set the begin to now
+            if now.time() < rent_afternoon_begin:
+                begin = datetime.datetime.combine(now.date(), rent_afternoon_begin)
+            else:
+                begin = now
+        elif company.rent_default_begin == 'tomorrow_morning':
+            begin = datetime.datetime.combine(now.date()+datetime.timedelta(days=1), rent_morning_begin)
+        elif company.rent_default_begin == 'tomorrow_after':
+            begin = datetime.datetime.combine(now.date()+datetime.timedelta(days=1), rent_afternoon_begin)
+        else:
+            return False
+
+        return begin.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+
+    def default_out_shipping(self, cr, uid, context=None):
+        
+        return self.default_begin_rent(cr, uid, context)
+
     _name = 'rent.order'
     _sql_constraints = []
     _rec_name = 'ref'
@@ -779,8 +821,8 @@ class RentOrder(osv.osv):
 
     _defaults = {
         'date_created': fields.datetime.now,
-        'date_begin_rent': fields.datetime.now,
-        'date_out_shipping': fields.datetime.now,
+        'date_begin_rent': default_begin_rent,
+        'date_out_shipping': default_out_shipping,
         'state':
             'draft',
         'salesman': # Default salesman is the curent user

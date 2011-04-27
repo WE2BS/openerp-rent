@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="rent_company_form_view" model="ir.ui.view">
+            <field name="name">rent.company.form.view</field>
+            <field name="model">res.company</field>
+            <field name="type">form</field>
+            <field name="inherit_id" ref="base.view_company_form"/>
+            <field name="arch" type="xml">
+                <page string="Configuration" position="inside">
+                    <separator string="Rent" colspan="4"/>
+                    <field name="rent_morning_begin"/>
+                    <field name="rent_afternoon_begin"/>
+                    <field name="rent_afternoon_end"/>
+                    <field name="rent_default_begin"/>
+                </page>
+            </field>
+        </record>
+    </data>
+</openerp>

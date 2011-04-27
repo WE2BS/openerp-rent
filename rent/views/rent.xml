@@ -73,9 +73,9 @@
                                 <field name="date_out_shipping"/>
                                 <field name="date_in_shipping"/>
                                 <field name="rent_duration"
-                                    on_change="on_duration_changed(date_begin_rent,rent_duration,rent_duration_unity,context)"/>
+                                    on_change="on_duration_changed(date_begin_rent,rent_duration,rent_duration_unity,shop_id,context)"/>
                                 <field name="rent_duration_unity"
-                                    on_change="on_duration_changed(date_begin_rent,rent_duration,rent_duration_unity,context)"/>
+                                    on_change="on_duration_changed(date_begin_rent,rent_duration,rent_duration_unity,shop_id,context)"/>
                                 <field name="rent_invoice_period"/>
                             </group>
                             <field name="description" colspan="4"/>
