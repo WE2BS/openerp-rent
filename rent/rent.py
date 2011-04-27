@@ -23,11 +23,13 @@ import math
 import netsvc
 import datetime
 
+# OpenLib is a library I wrote for OpenERP, you can download it here :
+# https://github.com/WE2BS/openerp-openlib
 import openlib
 
 from osv import osv, fields
 from tools.translate import _
-from tools.misc import cache, DEFAULT_SERVER_DATETIME_FORMAT
+from tools.misc import DEFAULT_SERVER_DATETIME_FORMAT
 from decimal_precision import get_precision
 
 _logger = logging.getLogger('rent')
@@ -413,7 +415,7 @@ class RentOrder(osv.osv):
             days = self.pool.get('product.uom')._compute_qty(cr, uid,
                 order.rent_duration_unity.id, duration, day_unity.id)
 
-            end = begin + datetime.timedelta(days=days)
+            end = begin + datetime.timedelta(days=days-1) # Removed one day to have a more realistic duration
             end = end.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 
             result[order.id] = end
