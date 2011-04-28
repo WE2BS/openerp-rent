@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OpenERP Server 6.0.2\n"
 "Report-Msgid-Bugs-To: support@openerp.com\n"
-"POT-Creation-Date: 2011-04-27 08:27+0000\n"
-"PO-Revision-Date: 2011-04-27 08:27+0000\n"
+"POT-Creation-Date: 2011-04-28 07:33+0000\n"
+"PO-Revision-Date: 2011-04-28 07:33+0000\n"
 "Last-Translator: <>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -36,6 +36,11 @@ msgid "The price per duration or the sale price, depending of the product type. 
 msgstr ""
 
 #. module: rent
+#: selection:res.company,rent_default_begin:0
+msgid "Today"
+msgstr ""
+
+#. module: rent
 #: field:rent.order.line,unit_price:0
 msgid "Product Unit Price"
 msgstr ""
@@ -53,6 +58,11 @@ msgstr ""
 #. module: rent
 #: field:rent.order,description:0
 msgid "Object"
+msgstr ""
+
+#. module: rent
+#: help:res.company,rent_afternoon_begin:0
+msgid "This time will be used as default rent begin date/time if you select 'Tomorrow (Afternoon)' as default value."
 msgstr ""
 
 #. module: rent
@@ -75,6 +85,11 @@ msgstr ""
 #. module: rent
 #: help:rent.order,shop_id:0
 msgid "The shop where this order was created."
+msgstr ""
+
+#. module: rent
+#: help:rent.order,salesman:0
+msgid "The salesman who handle this order, optional."
 msgstr ""
 
 #. module: rent
@@ -103,9 +118,14 @@ msgid "Invoiced percent, calculated on the numver if invoices confirmed."
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:513
+#: code:addons/rent/rent.py:518
 #, python-format
 msgid " at "
+msgstr ""
+
+#. module: rent
+#: selection:res.company,rent_default_begin:0
+msgid "Tomorrow (Morning)"
 msgstr ""
 
 #. module: rent
@@ -197,7 +217,7 @@ msgid "Products sell price"
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:135
+#: code:addons/rent/rent.py:137
 #, python-format
 msgid "The Rent Order \"%s\" has been reset."
 msgstr ""
@@ -214,7 +234,7 @@ msgid "Lines of this rent order."
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:361
+#: code:addons/rent/rent.py:363
 #, python-format
 msgid "This order have confirmed invoice, and can't be deleted right now."
 msgstr ""
@@ -287,18 +307,18 @@ msgid "Date of the shipping."
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:927
+#: code:addons/rent/rent.py:968
 #, python-format
 msgid "Error !"
 msgstr ""
 
 #. module: rent
-#: model:ir.model,name:rent.model_rent_order
-msgid "rent.order"
+#: field:res.company,rent_default_begin:0
+msgid "Rent default begin/shipping"
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:385
+#: code:addons/rent/rent.py:387
 #, python-format
 msgid "You can't cancel an order in this state."
 msgstr ""
@@ -325,6 +345,17 @@ msgid "Done"
 msgstr ""
 
 #. module: rent
+#: view:res.company:0
+msgid "Configuration"
+msgstr ""
+
+#. module: rent
+#: field:rent.order,state:0
+#: field:rent.order.line,state:0
+msgid "State"
+msgstr ""
+
+#. module: rent
 #: help:rent.order.line,real_unit_price:0
 msgid "This price correspond to the price of the product, not matter its type. In the case of a rented product, its equal to the unit price expressed in order duration unity, and in the case of a service product, to the sale price of the product."
 msgstr ""
@@ -345,6 +376,11 @@ msgid "Enable this if you want to rent this product."
 msgstr ""
 
 #. module: rent
+#: help:res.company,rent_default_begin:0
+msgid "Specify the default rent begin date/time value you want to have when you create a new rent order."
+msgstr ""
+
+#. module: rent
 #: field:rent.order.line,discount:0
 msgid "Discount (%)"
 msgstr ""
@@ -355,9 +391,8 @@ msgid "The price of ONE product for the entire duration."
 msgstr ""
 
 #. module: rent
-#: field:rent.order,state:0
-#: field:rent.order.line,state:0
-msgid "State"
+#: field:res.company,rent_afternoon_end:0
+msgid "Afternoon end"
 msgstr ""
 
 #. module: rent
@@ -387,8 +422,8 @@ msgid "Untaxed Total"
 msgstr ""
 
 #. module: rent
-#: field:rent.order.line,product_type:0
-msgid "Type of product"
+#: help:res.company,rent_afternoon_end:0
+msgid "This time will be used as the time of the rent end date."
 msgstr ""
 
 #. module: rent
@@ -413,8 +448,8 @@ msgid "Unity"
 msgstr ""
 
 #. module: rent
-#: sql_constraint:rent.order.line:0
-msgid "The coefficient must be superior to 0."
+#: field:res.company,rent_morning_begin:0
+msgid "Day begin"
 msgstr ""
 
 #. module: rent
@@ -423,7 +458,7 @@ msgid "How many products to rent."
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:975
+#: code:addons/rent/rent.py:1016
 #, python-format
 msgid "You don't have enought quantity of this product. You asked %d, but there are %d available. You can continue, but you are warned."
 msgstr ""
@@ -434,8 +469,8 @@ msgid "Rent begin date"
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:360
-#: code:addons/rent/rent.py:365
+#: code:addons/rent/rent.py:362
+#: code:addons/rent/rent.py:367
 #, python-format
 msgid "You can't cancel this order."
 msgstr ""
@@ -443,6 +478,11 @@ msgstr ""
 #. module: rent
 #: field:rent.interval,method:0
 msgid "Method"
+msgstr ""
+
+#. module: rent
+#: selection:res.company,rent_default_begin:0
+msgid "Empty"
 msgstr ""
 
 #. module: rent
@@ -500,7 +540,7 @@ msgid "Quotation"
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:546
+#: code:addons/rent/rent.py:551
 #, python-format
 msgid "Invoice %d/%d"
 msgstr ""
@@ -511,7 +551,7 @@ msgid "Period between invoices"
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:800
+#: code:addons/rent/rent.py:841
 #, python-format
 msgid "The date must be today of later."
 msgstr ""
@@ -527,6 +567,11 @@ msgid "Rent end date"
 msgstr ""
 
 #. module: rent
+#: selection:res.company,rent_default_begin:0
+msgid "Tomorrow (Afternoon)"
+msgstr ""
+
+#. module: rent
 #: model:ir.model,name:rent.model_res_company
 msgid "Companies"
 msgstr ""
@@ -537,7 +582,7 @@ msgid "Total (with discount)"
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:385
+#: code:addons/rent/rent.py:387
 #, python-format
 msgid "Error"
 msgstr ""
@@ -581,7 +626,7 @@ msgid "Enter informations you want about this order."
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:801
+#: code:addons/rent/rent.py:842
 #, python-format
 msgid "The begin date must be today or later."
 msgstr ""
@@ -602,6 +647,11 @@ msgid "General"
 msgstr ""
 
 #. module: rent
+#: field:rent.order.line,real_unit_price:0
+msgid "Unit Price"
+msgstr ""
+
+#. module: rent
 #: field:rent.order,fiscal_position:0
 msgid "Fiscal Position"
 msgstr ""
@@ -617,7 +667,7 @@ msgid "This description will be used in invoices."
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:523
+#: code:addons/rent/rent.py:528
 #, python-format
 msgid "Rental from %s to %s, invoice %d/%d.\n"
 "Invoice for the period from %s to %s."
@@ -649,18 +699,18 @@ msgid "Rent Order reference must be unique !"
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:366
+#: code:addons/rent/rent.py:368
 #, python-format
 msgid "This order have confirmed shipping orders !"
 msgstr ""
 
 #. module: rent
-#: field:rent.order.line,real_unit_price:0
-msgid "Unit Price"
+#: help:res.company,rent_morning_begin:0
+msgid "This time will be used as default rent begin date/time if you select 'Tomorrow (Morning)' as default value."
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:987
+#: code:addons/rent/rent.py:1028
 #: model:ir.model,name:rent.model_product_product
 #: field:rent.order.line,product_id:0
 #, python-format
@@ -688,8 +738,8 @@ msgid "Error: Invalid ean code"
 msgstr ""
 
 #. module: rent
-#: help:rent.order,salesman:0
-msgid "The salesman who handle this order, optional."
+#: field:res.company,rent_afternoon_begin:0
+msgid "Afternoon begin"
 msgstr ""
 
 #. module: rent
@@ -709,14 +759,24 @@ msgid "Name"
 msgstr ""
 
 #. module: rent
+#: model:ir.model,name:rent.model_rent_order
+msgid "rent.order"
+msgstr ""
+
+#. module: rent
 #: help:rent.order,ref:0
 msgid "The reference is a unique identifier that identify this order."
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:974
+#: code:addons/rent/rent.py:1015
 #, python-format
 msgid "Not enought quantity !"
+msgstr ""
+
+#. module: rent
+#: field:rent.order.line,product_type:0
+msgid "Type of product"
 msgstr ""
 
 #. module: rent
@@ -735,7 +795,7 @@ msgid "Order"
 msgstr ""
 
 #. module: rent
-#: code:addons/rent/rent.py:927
+#: code:addons/rent/rent.py:968
 #, python-format
 msgid "There is no income account defined for this product: \"%s\" (id:%d)"
 msgstr ""
@@ -758,6 +818,7 @@ msgstr ""
 #. module: rent
 #: model:ir.module.module,shortdesc:rent.module_meta_information
 #: selection:rent.order.line,product_type:0
+#: view:res.company:0
 msgid "Rent"
 msgstr ""
 

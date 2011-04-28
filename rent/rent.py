@@ -418,9 +418,8 @@ class RentOrder(osv.osv):
                 order.rent_duration_unity.id, duration, day_unity.id)
 
             # Removed one day to have a more realistic duration: In the case of a 1 day duration
-            # we except the customer to bring the products the same day !
+            # we except the customer to bring the products the same day, not tomorrow.
             end = begin + datetime.timedelta(days=days-1)
-            # We set the end time to the end of the day !
             end = datetime.datetime.combine(end.date(), openlib.to_time(order.company_id.rent_afternoon_end))
             end = end.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 

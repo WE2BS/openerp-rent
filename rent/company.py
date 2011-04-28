@@ -34,10 +34,14 @@ class Company(osv.osv):
 
     _inherit = 'res.company'
     _columns = {
-        'rent_morning_begin' : fields.time('Day begin'),
-        'rent_afternoon_begin' : fields.time('Afternoon begin'),
-        'rent_afternoon_end' : fields.time('Afternoon end'),
-        'rent_default_begin' : fields.selection(DEFAULT_BEGIN, 'Rent default begin/shipping')
+        'rent_morning_begin' : fields.time('Day begin', required=True, help=
+            "This time will be used as default rent begin date/time if you select 'Tomorrow (Morning)' as default value."),
+        'rent_afternoon_begin' : fields.time('Afternoon begin', required=True, help=
+            "This time will be used as default rent begin date/time if you select 'Tomorrow (Afternoon)' as default value."),
+        'rent_afternoon_end' : fields.time('Afternoon end', required=True, help=
+            "This time will be used as the time of the rent end date."),
+        'rent_default_begin' : fields.selection(DEFAULT_BEGIN, 'Rent default begin/shipping', required=True, help=
+            "Specify the default rent begin date/time value you want to have when you create a new rent order.")
     }
     _defaults = {
         'rent_morning_begin' : '09:00:00',
