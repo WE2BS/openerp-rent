@@ -31,7 +31,8 @@
     "init_xml": [],
     "demo_xml": [],
     "update_xml": ['data/uoms.xml', 'data/intervals.xml', 'views/rent.xml', 'views/product.xml', 'views/menus.xml',
-                   'views/sequence.xml', 'views/company.xml', 'workflow/rent.xml', 'security/ir.model.access.csv'],
+                   'views/sequence.xml', 'views/company.xml', 'workflow/rent.xml', 'security/ir.model.access.csv',
+                   'reports/reports.xml'],
     "active": False,
     "test": [],
     "installable": True

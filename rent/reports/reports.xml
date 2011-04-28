@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <!-- Rent Order -->
+        <record id="rent_order_report" model="ir.actions.report.xml">
+            <field name="name">Quotation / Rent Order</field>
+            <field name="type">ir.actions.report.xml</field>
+            <field name="model">rent.order</field>
+            <field name="report_name">rent_order_report</field>
+            <field name="report_type">aeroo</field>
+            <field name="in_format">oo-odt</field>
+            <field name="out_format" search="[('code', '=', 'oo-odt')]"/>
+            <field name="report_rml">rent/reports/order.odt</field>
+            <field name="tml_source">file</field>
+            <field name="parser_state">default</field>
+        </record>
+        <ir_set>
+            <field name="key">action</field>
+            <field name="key2">client_print_multi</field>
+            <field name="models" eval="['rent.order']"/>
+            <field name="name">rent_order_report</field>
+            <field eval="'ir.actions.report.xml,'+str(rent_order_report)" name="value"/>
+            <field eval="True" name="isobject"/>
+            <field eval="True" name="replace"/>
+        </ir_set>
+    </data>
+</openerp>
