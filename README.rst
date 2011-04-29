@@ -8,6 +8,6 @@ been partially financed by the Rtz Évènement company (http://www.rtzevenement.
 Documentation
 -------------
 
-You can contribute to documentation on the wiki : 
+You can contribute to documentation on the wiki : https://github.com/WE2BS/openerp-rent/wiki
 
 
