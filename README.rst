@@ -9,9 +9,10 @@ How to contribute
 -----------------
 
 We need feedbacks about the module :
-- Bug reports
-- Features requests
-- Opinions
+
+* Bug reports
+* Features requests
+* Opinions
 
 Please, open github issues and report such things !
 
