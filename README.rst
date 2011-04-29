@@ -6,7 +6,7 @@ It is fully integrated with stock management, uses Aeroo Reports engine, and is 
 been partially financed by the Rtz Évènement company (http://www.rtzevenement.fr).
 
 Documentation
-=============
+-------------
 
 You can contribute to documentation on the wiki : 
 
