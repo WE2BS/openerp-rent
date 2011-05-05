@@ -112,7 +112,9 @@ class RentOrder(osv.osv):
                 raise osv.except_osv('Begin date have an invalid format.')
 
         end = begin + datetime.timedelta(days=days-1) # We remove 1 day to set the return date the same day that the rent end date
-        end = datetime.datetime.combine(end.date(), openlib.to_time(company.rent_afternoon_end))
+        # 'end' can be a datetime or a date object, depending of the widget.
+        end = datetime.datetime.combine(end.date() if isinstance(end, datetime.datetime) else end,
+            openlib.to_time(company.rent_afternoon_end))
         end = end.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 
         return {'value' : {'date_in_shipping' : end}}
@@ -672,7 +674,6 @@ class RentOrder(osv.osv):
 
         """
         Returns the default begin rent datetime. The user can configure its default behavior in it company :
-
             - Today: When the rent order is created, the begin date is set to today by defaut, at afternoon.
             - Tomorrow (Morning): When the rent order is created, the begin date is set the tomorrow morning
             - Tomorrow (Afternoon): Same but afternoon
