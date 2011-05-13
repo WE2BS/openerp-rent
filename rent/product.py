@@ -21,19 +21,19 @@ import logging
 
 from osv import osv, fields
 from tools.translate import _
-from openlib import Searcher
+from openlib.orm import *
 
 _logger = logging.getLogger('rent')
 
-class Product(osv.osv):
+class Product(osv.osv, ExtendedOsv):
 
-    def check_rent_price(self, cursor, user_id, ids, context=None):
+    def check_rent_price(self, cr, uid, ids, context=None):
 
         """
         We check that the rent price is neither empty or 0 if the product can be rent.
         """
 
-        products = self.browse(cursor, user_id, ids, context=context)
+        products = self.filter(ids)
 
         for product in products:
             if product.can_be_rent:
@@ -47,8 +47,7 @@ class Product(osv.osv):
         Returns the default price unity (the first in the list).
         """
 
-        unity = Searcher(cr, uid, 'product.uom', context=context,
-            category_id__name='Duration').browse_one()
+        unity = self.get(category_id__name='Duration', _object='product.uom')
 
         if not unity:
             _logger.warning("It seems that there isn't a reference unity in the 'Duration' UoM category. "

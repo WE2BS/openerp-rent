@@ -25,7 +25,8 @@ import datetime
 
 # OpenLib is a library I wrote for OpenERP, you can download it here :
 # https://github.com/WE2BS/openerp-openlib
-import openlib
+from openlib.orm import *
+from openlib.tools import *
 
 from osv import osv, fields
 from tools.translate import _
@@ -47,7 +48,7 @@ PRODUCT_TYPE = (
     ('service', 'Service'),
 )
 
-class RentOrder(osv.osv):
+class RentOrder(osv.osv, ExtendedOsv):
 
     # A Rent Order is almost like a Sale Order except that the way we generate invoices
     # is really different, and there is a notion of duration. I decided to not inherit
@@ -61,7 +62,7 @@ class RentOrder(osv.osv):
         """
 
         result = {}
-        client = self.pool.get('res.partner').browse(cr, uid, client_id)
+        client = self.get(client_id, _object='res.partner')
 
         for address in client.address:
             
@@ -96,29 +97,27 @@ class RentOrder(osv.osv):
             return {}
         
         # Converts the duration in days and add these days to the rent input shipping date
-        day_unity = openlib.Searcher(cr, uid, 'product.uom', context=context,
-            category_id__xmlid='rent.duration_uom_categ', name='Day').browse_one()
+        day_unity = self.get(category_id__name='Duration', name='Day', _object='product.uom')
         days = self.pool.get('product.uom')._compute_qty(cr, uid,
             duration_unity_id, duration, day_unity.id)
         company = self.pool.get('sale.shop').browse(cr, uid, shop_id, context=context).company_id
 
         # Depending of the widget, the begin date can be a date or a datetime
         try:
-            begin = openlib.to_datetime(rent_begin)
+            begin = to_datetime(rent_begin)
         except ValueError:
             try:
-                begin = openlib.to_date(rent_begin)
+                begin = to_date(rent_begin)
             except ValueError:
                 raise osv.except_osv('Begin date have an invalid format.')
 
         end = begin + datetime.timedelta(days=days-1) # We remove 1 day to set the return date the same day that the rent end date
         # 'end' can be a datetime or a date object, depending of the widget.
         end = datetime.datetime.combine(end.date() if isinstance(end, datetime.datetime) else end,
-            openlib.to_time(company.rent_afternoon_end))
+            to_time(company.rent_afternoon_end))
         end = end.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 
         return {'value' : {'date_in_shipping' : end}}
-
 
     def on_draft_clicked(self, cr, uid, ids, context=None):
 
@@ -126,7 +125,7 @@ class RentOrder(osv.osv):
         This method is called when the rent order is in cancelled state and the user clicked on 'Go back to draft'.
         """
 
-        orders = self.browse(cr, uid, ids, context=context)
+        orders = self.filter(ids)
         wkf_service = netsvc.LocalService("workflow")
         self.write(cr, uid, ids, {'state' : 'draft'})
 
@@ -146,10 +145,7 @@ class RentOrder(osv.osv):
         Show the invoices which have been generated.
         """
 
-        order = self.browse(cr, uid, ids, context=context)[0]
-        view_id = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'account', 'invoice_form')
-        view_id = view_id and view_id[1] or False
-        view_xml_id = self.pool.get('ir.ui.view').get_xml_id(cr, uid, [view_id])[view_id]
+        order = self.get(ids[0])
 
         action = {
             'name': '%s Invoice(s)' % order.ref,
@@ -160,7 +156,7 @@ class RentOrder(osv.osv):
             'nodestroy': True,
             'target': 'current',
             'domain': [('origin', '=', order.ref)],
-            'context' : {'form_view_ref' : view_xml_id}
+            'context' : {'form_view_ref' : 'account.invoice_form'}
         }
 
         if len(order.invoices_ids) == 1:
@@ -175,7 +171,7 @@ class RentOrder(osv.osv):
         Called when the workflow goes to confirmed. Currently, the module only handles stockable/consummable products.
         """
 
-        orders = self.browse(cr, uid, ids)
+        orders = self.filter(ids)
         ok = False
 
         for order in orders:
@@ -200,7 +196,7 @@ class RentOrder(osv.osv):
             - An input picking, to get the products back.
         """
 
-        orders = self.browse(cr, uid, orders_ids)
+        orders = self.filter(orders_ids)
         move_pool, picking_pool = map(
             self.pool.get, ('stock.move', 'stock.picking'))
         workflow = netsvc.LocalService("workflow")
@@ -265,7 +261,7 @@ class RentOrder(osv.osv):
                 self.write(cr, uid, order.id,
                     {'out_picking_id' : out_picking_id}),
 
-                # Check assignement (TODO: This should be optional)
+                # Check assignement (FIXME: This should be optional)
                 picking_pool.action_assign(cr, uid, [out_picking_id])
 
         return True
@@ -277,7 +273,7 @@ class RentOrder(osv.osv):
         We have to generate the input picking.
         """
 
-        orders = self.browse(cr, uid, ids)
+        orders = self.filter(ids)
         picking_pool, move_pool = map(
             self.pool.get, ('stock.picking', 'stock.move'))
         workflow = netsvc.LocalService("workflow")
@@ -328,7 +324,7 @@ class RentOrder(osv.osv):
         This action is called by the workflow activity 'ongoing'. We generate invoices for the duration period.
         """
 
-        orders = self.browse(cr, uid, ids)
+        orders = self.filter(ids)
 
         for order in orders:
 
@@ -352,7 +348,7 @@ class RentOrder(osv.osv):
         You can't cancel an order which have confirmed picking.
         """
 
-        orders = self.browse(cr, uid, ids)
+        orders = self.filter(ids)
 
         for order in orders:
 
@@ -396,7 +392,7 @@ class RentOrder(osv.osv):
         Returns lines ids associated to this order.
         """
 
-        lines = self.pool.get('rent.order.line').browse(cr, uid, ids)
+        lines = self.filter(ids, _object='rent.order.line')
         return [line.order_id.id for line in lines]
 
     def get_end_date(self, cr, uid, ids, field_name, arg, context=None):
@@ -405,15 +401,14 @@ class RentOrder(osv.osv):
         Returns the rent order end date, based on the duration and the company configuration
         """
 
-        orders = self.browse(cr, uid, ids, context=context)
+        orders = self.filter(ids)
         result = {}
 
         for order in orders:
 
-            begin = openlib.to_datetime(order.date_begin_rent)
+            begin = to_datetime(order.date_begin_rent)
             duration = order.rent_duration
-            day_unity = openlib.Searcher(cr, uid, 'product.uom',
-                category_id__xmlid='rent.duration_uom_categ', name='Day').browse_one()
+            day_unity = self.get(category_id__name='Duration', name='Day', _object='product.uom')
             
             # Converts the order duration (expressed in days/month/years) into the days duration
             days = self.pool.get('product.uom')._compute_qty(cr, uid,
@@ -422,7 +417,7 @@ class RentOrder(osv.osv):
             # Removed one day to have a more realistic duration: In the case of a 1 day duration
             # we except the customer to bring the products the same day, not tomorrow.
             end = begin + datetime.timedelta(days=days-1)
-            end = datetime.datetime.combine(end.date(), openlib.to_time(order.company_id.rent_afternoon_end))
+            end = datetime.datetime.combine(end.date(), to_time(order.company_id.rent_afternoon_end))
             end = end.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 
             result[order.id] = end
@@ -435,7 +430,7 @@ class RentOrder(osv.osv):
         Returns the percentage of invoices which have been confirmed.
         """
 
-        orders = self.browse(cr, uid, ids, context=context)
+        orders = self.filter(ids)
         result = {}
 
         for order in orders:
@@ -456,7 +451,7 @@ class RentOrder(osv.osv):
 
         result = {}
         tax_pool, fiscal_position_pool = map(self.pool.get, ['account.tax', 'account.fiscal.position'])
-        orders = self.browse(cr, uid, ids, context=context)
+        orders = self.filter(ids)
 
         for order in orders:
 
@@ -514,17 +509,18 @@ class RentOrder(osv.osv):
         """
 
         # We use the lang of the partner instead of the lang of the user to put the text into the invoice.
-        context = {'lang' : openlib.get_partner_lang(cr, uid, order.partner_id).code}
+        partner = self.get(order.partner_id, _object='res.partner')
+        partner_lang = self.get(code=partner.lang, _object='res.lang')
+        context = {'lang' : partner.lang}
 
-        partner_lang = openlib.partner.get_partner_lang(cr, uid, order.partner_id)
         datetime_format = partner_lang.date_format + _(' at ') + partner_lang.time_format
         datetime_format = datetime_format.encode('utf-8')
 
-        begin_date = openlib.to_datetime(order.date_begin_rent).strftime(datetime_format).decode('utf-8')
-        end_date = openlib.to_datetime(order.date_end_rent).strftime(datetime_format).decode('utf-8')
+        begin_date = to_datetime(order.date_begin_rent).strftime(datetime_format).decode('utf-8')
+        end_date = to_datetime(order.date_end_rent).strftime(datetime_format).decode('utf-8')
 
-        period_begin = openlib.to_datetime(period_begin).strftime(datetime_format).decode('utf-8')
-        period_end = openlib.to_datetime(period_end).strftime(datetime_format).decode('utf-8')
+        period_begin = to_datetime(period_begin).strftime(datetime_format).decode('utf-8')
+        period_end = to_datetime(period_end).strftime(datetime_format).decode('utf-8')
 
         return _(
             "Rental from %s to %s, invoice %d/%d.\n"
@@ -586,46 +582,13 @@ class RentOrder(osv.osv):
         return [self.get_invoice_at(cr, uid, order,
             order.date_begin_rent, 1, 1, order.date_begin_rent, order.date_end_rent)]
 
-    def get_products_buy_price(self, cr, uid, ids, field_name, args, context=None):
-
-        """
-        Returns the total of the buy price of all products. This is used to evaluate the price
-        of the rented products, in case of problems with assurances.
-        """
-
-        orders = self.browse(cr, uid, ids, context=context)
-        result = {}
-
-        for order in orders:
-            total = 0
-            for line in order.rent_line_ids:
-                buy_price_untaxed = line.product_id.product_tmpl_id.standard_price
-                total += line.product_id.product_tmpl_id.standard_price * line.quantity
-            result[order.id] = total
-
-        return result
-
-    def get_products_sell_price(self, cr, uid, ids, field_name, args, context=None):
-
-        """
-        Returns the total of sell price of all products. This is used to evaluate the price
-        of the rented products, in case of problems with assurances.
-        """
-
-        orders = self.browse(cr, uid, ids, context=context)
-        result = {}
-
-
-
-        return result
-
     def test_have_invoices(self, cr, uid, ids, *args):
 
         """
         Method called by the workflow to test if the order have invoices.
         """
 
-        return len(self.browse(cr, uid, ids[0]).invoices_ids) > 0
+        return len(self.get(ids[0]).invoices_ids) > 0
 
     def test_out_shipping_done(self, cr, uid, ids, *args):
 
@@ -633,7 +596,7 @@ class RentOrder(osv.osv):
         Called by the workflow. Returns True once the product has been output shipped.
         """
         
-        lines = self.browse(cr, uid, ids[0]).out_picking_id.move_lines or []
+        lines = self.get(ids[0]).out_picking_id.move_lines or []
 
         return all(line.state == 'done' for line in lines)
     
@@ -652,8 +615,7 @@ class RentOrder(osv.osv):
         Returns the 1st UoM present into the Duration category.
         """
 
-        unity = openlib.Searcher(cr, uid, 'product.uom', context=context,
-            category_id__name='Duration').browse_one()
+        unity = self.get(category_id__name='Duration', _object='product.uom')
 
         if not unity:
             _logger.warning("It seems that there isn't a reference unity in the 'Duration' UoM category. "
@@ -667,7 +629,7 @@ class RentOrder(osv.osv):
         Returns the 1st available interval.
         """
 
-        interval = openlib.Searcher(cr, uid, 'rent.interval', context=context).browse_one()
+        interval = self.get(_object='rent.interval')
         return interval.id if interval else False
 
     def default_begin_rent(self, cr, uid, context=None):
@@ -681,10 +643,10 @@ class RentOrder(osv.osv):
         """
 
         now = datetime.datetime.now()
-        company = self.pool.get('res.users').browse(cr, uid, uid, context=context).company_id
+        company = self.get(uid, _object='res.users').company_id
 
-        rent_afternoon_begin = openlib.to_time(company.rent_afternoon_begin)
-        rent_morning_begin = openlib.to_time(company.rent_morning_begin)
+        rent_afternoon_begin = to_time(company.rent_afternoon_begin)
+        rent_morning_begin = to_time(company.rent_morning_begin)
 
         if company.rent_default_begin == 'today':
             # If we are in the morning, we set the begin at afternoon, else, we set the begin to now
@@ -839,13 +801,11 @@ class RentOrder(osv.osv):
 
     _sql_constraints = [
         ('ref_uniq', 'unique(ref)', 'Rent Order reference must be unique !'),
-        #('valid_created_date', 'check(date_created >= CURRENT_DATE)', _('The date must be today of later.')),
-        #('valid_begin_date', 'check(date_begin_rent >= CURRENT_DATE)', _('The begin date must be today or later.')),
         ('begin_after_create', 'check(date_begin_rent >= date_created)', 'The begin date must later than the order date.'),
         ('valid_discount', 'check(discount >= 0 AND discount <= 100)', 'Discount must be a value between 0 and 100.'),
     ]
 
-class RentOrderLine(osv.osv):
+class RentOrderLine(osv.osv, ExtendedOsv):
 
     """
     Rent order lines define products that will be rented.
@@ -865,7 +825,7 @@ class RentOrderLine(osv.osv):
         if not product_id:
             return result
 
-        product = self.pool.get('product.product').browse(cr, uid, product_id)
+        product = self.get(product_id, _object='product.product')
 
         result['description'] = product.name
         result['tax_ids'] = [tax.id for tax in product.taxes_id]
@@ -890,7 +850,7 @@ class RentOrderLine(osv.osv):
         result = {}
         if not product_id:
             return result
-        product = self.pool.get('product.product').browse(cr, uid, product_id)
+        product = self.get(product_id, _object='product.product')
         if not product.id:
             return result
         warning = self.check_product_quantity(cr, uid, product, quantity)
@@ -923,7 +883,7 @@ class RentOrderLine(osv.osv):
         Returns the price for the duration for one of this product.
         """
 
-        lines = self.browse(cr, uid, ids, context=context)
+        lines = self.filter(ids)
         result = {}
 
         for line in lines:
@@ -956,7 +916,7 @@ class RentOrderLine(osv.osv):
         Returns a dictionary that data used to create the invoice lines.
         """
 
-        rent_lines = self.browse(cr, uid, ids, context)
+        rent_lines = self.filter(ids)
         result = []
 
         for rent_line in rent_lines:
@@ -992,7 +952,7 @@ class RentOrderLine(osv.osv):
         a service product it it's marked as 'Service' or at least, sellable.
         """
 
-        lines = self.browse(cr, uid, ids, context)
+        lines = self.filter(ids)
 
         for line in lines:
             if line.product_type == 'rent' and not line.product_id.can_be_rent:

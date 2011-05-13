@@ -18,8 +18,9 @@
 #
 
 from osv import osv, fields
+from openlib.orm import *
 
-class InvoiceInterval(osv.osv):
+class InvoiceInterval(osv.osv, ExtendedOsv):
 
     """
     This object represents a invoice interval the user can used when invoicing rent orders.

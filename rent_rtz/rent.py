@@ -17,7 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import openlib
+from openlib.orm import *
+from openlib.tools import *
 
 from osv import osv, fields
 from tools.translate import _
@@ -56,7 +57,7 @@ COEFF_MAPPING = {
     'more' : 9,
 }
 
-class RentOrderRtz(osv.osv):
+class RentOrderRtz(osv.osv, ExtendedOsv):
 
     _inherit = 'rent.order'
 
@@ -67,16 +68,14 @@ class RentOrderRtz(osv.osv):
         """
 
         # We use the lang of the partner instead of the lang of the user to put the text into the invoice.
-        context = {'lang' : openlib.get_partner_lang(cursor, user_id, order.partner_id).code}
+        partner = self.get(order.partner_id, _object='res.partner')
+        partner_lang = self.get(code=partner.lang, _object='res.lang')
+        context = {'lang' : partner.lang}
         
-        partner_lang = openlib.partner.get_partner_lang(cursor, user_id, order.partner_id)
         format = partner_lang.date_format
 
-        begin_date = openlib.to_datetime(order.date_begin_rent).strftime(format)
-        end_date = openlib.to_datetime(order.date_end_rent).strftime(format)
-
-        period_begin = openlib.to_datetime(period_begin).strftime(format)
-        period_end = openlib.to_datetime(period_end).strftime(format)
+        begin_date = to_datetime(order.date_begin_rent).strftime(format)
+        end_date = to_datetime(order.date_end_rent).strftime(format)
 
         return _(
             "Rental from %s to %s.\n"
@@ -90,7 +89,7 @@ class RentOrderRtz(osv.osv):
 
 RentOrderRtz()
 
-class RentOrderRtzLine(osv.osv):
+class RentOrderRtzLine(osv.osv, ExtendedOsv):
 
     def get_rent_price(self, line, duration_unit_price):
 
