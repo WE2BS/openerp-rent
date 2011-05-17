@@ -36,11 +36,6 @@ from decimal_precision import get_precision
 
 _logger = logging.getLogger('rent')
 
-# We enable auto-bug report on github thanks to openlib
-GITHUB_ENABLED = True
-GITHUB_USER = 'WE2BS'
-GITHUB_REPO = 'openerp-rent'
-
 STATES = (
     ('draft', 'Quotation'), # Default state
     ('confirmed', 'Confirmed'), # Confirmed, have to generate invoices

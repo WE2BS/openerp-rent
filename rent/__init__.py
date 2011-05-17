@@ -17,6 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+GITHUB_ENABLED = True
+GITHUB_USER = 'WE2BS'
+GITHUB_REPO = 'openerp-rent'
+
 import intervals
 import company
 import rent
