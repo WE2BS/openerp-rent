@@ -19,6 +19,7 @@
 
 from openlib.orm import *
 from openlib.tools import *
+from openlib.github import report_bugs
 
 from osv import osv, fields
 from tools.translate import _
@@ -61,6 +62,7 @@ class RentOrderRtz(osv.osv, ExtendedOsv):
 
     _inherit = 'rent.order'
 
+    @report_bugs
     def get_invoice_comment(self, cursor, user_id, order, date, current, max, period_begin, period_end):
 
         """
@@ -91,6 +93,7 @@ RentOrderRtz()
 
 class RentOrderRtzLine(osv.osv, ExtendedOsv):
 
+    @report_bugs
     def get_rent_price(self, line, duration_unit_price):
 
         """
@@ -102,6 +105,7 @@ class RentOrderRtzLine(osv.osv, ExtendedOsv):
 
         return duration_unit_price * line.coeff
 
+    @report_bugs
     def get_default_coeff(self, cursor, user_id, context=None):
         if context is None:
             context = {}
@@ -120,6 +124,7 @@ class RentOrderRtzLine(osv.osv, ExtendedOsv):
                 return COEFF_MAPPING[context['duration']]
         return COEFF_MAPPING['more']
 
+    @report_bugs
     def get_invoice_lines_data(self, cursor, user_id, ids, context=None):
 
         """

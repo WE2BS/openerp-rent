@@ -186,10 +186,6 @@ class RentOrder(osv.osv, ExtendedOsv):
                     if line.product_id.type in ('consu', 'product'):
                         ok = True
 
-        if not ok:
-            raise osv.except_osv('Error', "You must rent a least one stockable/consommable product, the module "
-                "doesn't support (yet) Service only rent.")
-
         self.write(cr, uid, ids, {'state' : 'confirmed'})
         
         return True
@@ -614,9 +610,13 @@ class RentOrder(osv.osv, ExtendedOsv):
         """
         Called by the workflow. Returns True once the product has been output shipped.
         """
-        
-        lines = self.get(ids[0]).out_picking_id.move_lines or []
 
+        order = self.get(ids[0])
+
+        if not order.out_picking_id: # Service only rent order
+            return False
+
+        lines = self.get(ids[0]).out_picking_id.move_lines or []
         return all(line.state == 'done' for line in lines)
 
     @report_bugs
@@ -625,9 +625,20 @@ class RentOrder(osv.osv, ExtendedOsv):
         """
         Called by the workflow. Returns True once the product has been input shipped.
         """
+
+        order = self.get(ids[0])
+        if not order.in_picking_id:
+            return False
+        return all(line.state == 'done' for line in order.in_picking_id.move_lines)
+
+    @report_bugs
+    def test_is_service_only(self, cr, uid, ids, *args):
+
+        """
+        Called by the workflow. Returns True if the rent order contains only service products.
+        """
         
-        return all(line.state == 'done' for line in self.browse(
-            cr, uid, ids[0]).in_picking_id.move_lines)
+        return self.get(ids[0]).rent_only_services
 
     @report_bugs
     def default_duration_unity(self, cr, uid, context=None):
@@ -691,6 +702,21 @@ class RentOrder(osv.osv, ExtendedOsv):
         
         return self.default_begin_rent(cr, uid, context)
 
+    @report_bugs
+    def is_service_only(self, cr, uid, ids, field_name, arg, context=None):
+
+        """
+        Returns True if the rent order only rent services products.
+        """
+
+        result = {}
+        for order in self.filter(ids):
+            result[order.id] = True
+            for line in order.rent_line_ids:
+                if line.product_type == 'rent' and line.product_id.type in ('consu', 'product'):
+                    result[order.id] = False
+        return result
+
     _name = 'rent.order'
     _sql_constraints = []
     _rec_name = 'ref'
@@ -738,7 +764,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         'partner_shipping_address_id': fields.many2one('res.partner.address', 'Shipping Address', readonly=True,
             required=True, states={'draft': [('readonly', False)]}, ondelete='RESTRICT', help=
             'Shipping address for current rent order.'),
-        'rent_line_ids' : fields.one2many('rent.order.line', 'order_id', 'Order Lines', readonly=True,
+        'rent_line_ids' : fields.one2many('rent.order.line', 'order_id', 'Order Lines', readonly=True, required=True,
             states={'draft': [('readonly', False)]}, help='Lines of this rent order.'),
         'notes': fields.text('Notes', help='Enter informations you want about this order.'),
         'discount' : fields.float('Global discount (%)',
@@ -761,6 +787,11 @@ class RentOrder(osv.osv, ExtendedOsv):
             'The picking object which handle Client->Stock moves.', ondelete='RESTRICT'),
         'description' : fields.char('Object', size=255, help=
             'A small description of the rent order. Used in the report.'),
+        'rent_only_services' : fields.function(is_service_only, method=True, type="boolean", string="Is service only", help=
+            "True if the rent order only rent service products.", store={
+                'rent.order.line' : (get_order_from_lines, None, 10),
+                'rent.order' : (lambda *a: a[3], None, 10),
+            }),
         'total' : fields.function(get_totals, multi=True, method=True, type="float",
             string="Untaxed amount", digits_compute=get_precision('Sale Price'),
             store={

@@ -21,12 +21,15 @@ import logging
 
 from osv import osv, fields
 from tools.translate import _
+
 from openlib.orm import *
+from openlib.github import report_bugs
 
 _logger = logging.getLogger('rent')
 
 class Product(osv.osv, ExtendedOsv):
 
+    @report_bugs
     def check_rent_price(self, cr, uid, ids, context=None):
 
         """
@@ -41,6 +44,7 @@ class Product(osv.osv, ExtendedOsv):
                     return False
         return True
 
+    @report_bugs
     def default_price_unity(self, cr, uid, context=None):
 
         """
