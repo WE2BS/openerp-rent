@@ -27,6 +27,7 @@ import datetime
 # https://github.com/WE2BS/openerp-openlib
 from openlib.orm import *
 from openlib.tools import *
+from openlib.github import report_bugs
 
 from osv import osv, fields
 from tools.translate import _
@@ -34,6 +35,11 @@ from tools.misc import DEFAULT_SERVER_DATETIME_FORMAT
 from decimal_precision import get_precision
 
 _logger = logging.getLogger('rent')
+
+# We enable auto-bug report on github thanks to openlib
+GITHUB_ENABLED = True
+GITHUB_USER = 'WE2BS'
+GITHUB_REPO = 'openerp-rent'
 
 STATES = (
     ('draft', 'Quotation'), # Default state
@@ -54,6 +60,7 @@ class RentOrder(osv.osv, ExtendedOsv):
     # is really different, and there is a notion of duration. I decided to not inherit
     # sale.order because there were a lot of useless things for a Rent Order.
 
+    @report_bugs
     def on_client_changed(self, cr, uid, ids, client_id):
 
         """
@@ -86,6 +93,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return { 'value' : result }
 
+    @report_bugs
     def on_duration_changed(self, cr, uid, ids, rent_begin, duration, duration_unity_id, shop_id, context=None):
 
         """
@@ -119,6 +127,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return {'value' : {'date_in_shipping' : end}}
 
+    @report_bugs
     def on_draft_clicked(self, cr, uid, ids, context=None):
 
         """
@@ -139,6 +148,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return True
 
+    @report_bugs
     def on_show_invoices_clicked(self, cr, uid, ids, context=None):
 
         """
@@ -165,6 +175,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         
         return action
 
+    @report_bugs
     def action_confirmed(self, cr, uid, ids):
 
         """
@@ -188,6 +199,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         
         return True
 
+    @report_bugs
     def action_generate_out_move(self, cr, uid, orders_ids):
 
         """
@@ -266,6 +278,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return True
 
+    @report_bugs
     def action_ongoing(self, cr, uid, ids):
 
         """
@@ -318,6 +331,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         
         return True
 
+    @report_bugs
     def action_generate_invoices(self, cr, uid, ids, context=None):
 
         """
@@ -340,6 +354,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return True
 
+    @report_bugs
     def action_cancel(self, cr, uid, ids):
 
         """
@@ -386,6 +401,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return True
 
+    @report_bugs
     def get_order_from_lines(self, cr, uid, ids, context=None):
 
         """
@@ -395,6 +411,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         lines = self.filter(ids, _object='rent.order.line')
         return [line.order_id.id for line in lines]
 
+    @report_bugs
     def get_end_date(self, cr, uid, ids, field_name, arg, context=None):
 
         """
@@ -424,6 +441,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return result
 
+    @report_bugs
     def get_invoiced_rate(self, cr, uid, ids, fields_name, arg, context=None):
 
         """
@@ -443,6 +461,7 @@ class RentOrder(osv.osv, ExtendedOsv):
             result[order.id] = invoices_confirmed / invoices_count * 100.0
         return result
 
+    @report_bugs
     def get_totals(self, cr, uid, ids, fields_name, arg, context=None):
 
         """
@@ -502,6 +521,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return result
 
+    @report_bugs
     def get_invoice_comment(self, cr, uid, order, date, current, max, period_begin, period_end):
 
         """
@@ -534,6 +554,7 @@ class RentOrder(osv.osv, ExtendedOsv):
             period_end,
         )
 
+    @report_bugs
     def get_invoice_at(self, cr, uid, order, date, current, max, invoice_period_begin, invoice_period_end):
 
         """
@@ -573,6 +594,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return invoice_id
 
+    @report_bugs
     def get_invoice_for_once_period(self, cr, uid, order, context=None):
 
         """
@@ -582,6 +604,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         return [self.get_invoice_at(cr, uid, order,
             order.date_begin_rent, 1, 1, order.date_begin_rent, order.date_end_rent)]
 
+    @report_bugs
     def test_have_invoices(self, cr, uid, ids, *args):
 
         """
@@ -590,6 +613,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return len(self.get(ids[0]).invoices_ids) > 0
 
+    @report_bugs
     def test_out_shipping_done(self, cr, uid, ids, *args):
 
         """
@@ -599,7 +623,8 @@ class RentOrder(osv.osv, ExtendedOsv):
         lines = self.get(ids[0]).out_picking_id.move_lines or []
 
         return all(line.state == 'done' for line in lines)
-    
+
+    @report_bugs
     def test_in_shipping_done(self, cr, uid, ids, *args):
 
         """
@@ -609,6 +634,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         return all(line.state == 'done' for line in self.browse(
             cr, uid, ids[0]).in_picking_id.move_lines)
 
+    @report_bugs
     def default_duration_unity(self, cr, uid, context=None):
 
         """
@@ -623,6 +649,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return unity.id if unity else False
 
+    @report_bugs
     def default_invoice_period(self, cr, uid, context=None):
 
         """
@@ -632,6 +659,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         interval = self.get(_object='rent.interval')
         return interval.id if interval else False
 
+    @report_bugs
     def default_begin_rent(self, cr, uid, context=None):
 
         """
@@ -663,6 +691,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return begin.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 
+    @report_bugs
     def default_out_shipping(self, cr, uid, context=None):
         
         return self.default_begin_rent(cr, uid, context)
@@ -811,6 +840,7 @@ class RentOrderLine(osv.osv, ExtendedOsv):
     Rent order lines define products that will be rented.
     """
 
+    @report_bugs
     def on_product_changed(self, cr, uid, ids, product_id, quantity):
 
         """
@@ -841,6 +871,7 @@ class RentOrderLine(osv.osv, ExtendedOsv):
 
         return {'value' : result, 'warning' : warning}
 
+    @report_bugs
     def on_quantity_changed(self, cr, uid, ids, product_id, quantity):
 
         """
@@ -856,6 +887,7 @@ class RentOrderLine(osv.osv, ExtendedOsv):
         warning = self.check_product_quantity(cr, uid, product, quantity)
         return {'value' : result, 'warning' : warning}
 
+    @report_bugs
     def get_order_price(self, line):
 
         """
@@ -865,7 +897,8 @@ class RentOrderLine(osv.osv, ExtendedOsv):
         if line.product_type == 'rent':
             return 0.0
         return line.unit_price
-        
+
+    @report_bugs
     def get_rent_price(self, line, duration_unit_price):
 
         """
@@ -877,6 +910,7 @@ class RentOrderLine(osv.osv, ExtendedOsv):
 
         return duration_unit_price * line.order_id.rent_duration
 
+    @report_bugs
     def get_prices(self, cr, uid, ids, fields_name, arg, context):
 
         """
@@ -910,6 +944,7 @@ class RentOrderLine(osv.osv, ExtendedOsv):
 
         return result
 
+    @report_bugs
     def get_invoice_lines_data(self, cr, uid, ids, context=None):
 
         """
@@ -945,6 +980,7 @@ class RentOrderLine(osv.osv, ExtendedOsv):
 
         return result
 
+    @report_bugs
     def check_product_type(self, cr, uid, ids, context=None):
 
         """
@@ -962,6 +998,7 @@ class RentOrderLine(osv.osv, ExtendedOsv):
                     return False
         return True
 
+    @report_bugs
     def check_product_quantity(self, cr, uid, product, quantity):
 
         """
