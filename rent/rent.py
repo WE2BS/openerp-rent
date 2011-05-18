@@ -642,15 +642,6 @@ class RentOrder(osv.osv, ExtendedOsv):
         return all(line.state == 'done' for line in order.in_picking_id.move_lines)
 
     @report_bugs
-    def test_is_service_only(self, cr, uid, ids, *args):
-
-        """
-        Called by the workflow. Returns True if the rent order contains only service products.
-        """
-        
-        return self.get(ids[0]).is_service_only
-
-    @report_bugs
     def default_duration_unity(self, cr, uid, context=None):
 
         """
