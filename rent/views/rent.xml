@@ -96,6 +96,8 @@
                                 -->
                                 <button name="on_compute_clicked" string="Compute" icon="gtk-execute"/>
                             </group>
+                            <field name="is_service_only" readonly="1" colspan="4"
+                                   string="This rent order contains only services, no shipping will be done."/>
                         </page>
                         <page string="Invoices">
                             <field name="invoices_ids" nolabel="1" context="{'form_view_ref' : 'account.invoice_form'}"/>
@@ -104,9 +106,13 @@
                             <field name="notes" colspan="4" nolabel="1"/>
                         </page>
                     </notebook>
-                    <group col="5">
+                    <group col="7">
                         <field name="state"/>
                         <button name="on_draft_clicked" string="Go back to draft" states="cancelled" type="object" icon="gtk-convert"/>
+                        <button name="on_force_start_clicked" string="Starts the rent manually" icon="gtk-ok"
+                            attrs="{'invisible' : ['|',('is_service_only','!=',True),('state','!=','confirmed')]}"/>
+                        <button name="on_force_stop_clicked" string="Stops the rent manually" icon="gtk-cancel"
+                            attrs="{'invisible' : ['|',('is_service_only','!=',True),('state','!=','ongoing')]}"/>
                         <button name="on_cancel_clicked" string="Cancel" states="confirmed" icon="gtk-cancel"/>
                         <button name="on_confirm_clicked" string="Confirm" states="draft" icon="gtk-ok"/>
                     </group>

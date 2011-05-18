@@ -177,14 +177,16 @@ class RentOrder(osv.osv, ExtendedOsv):
         Called when the workflow goes to confirmed. Currently, the module only handles stockable/consummable products.
         """
 
-        orders = self.filter(ids)
-        ok = False
+        self.write(cr, uid, ids, {'state' : 'confirmed'})
+        
+        return True
 
-        for order in orders:
-            for line in order.rent_line_ids:
-                if line.product_type == 'rent':
-                    if line.product_id.type in ('consu', 'product'):
-                        ok = True
+    @report_bugs
+    def action_confirmed_service(self, cr, uid, ids):
+
+        """
+        Called when the workflow is confirmed and we rent only services products.
+        """
 
         self.write(cr, uid, ids, {'state' : 'confirmed'})
         
@@ -283,6 +285,12 @@ class RentOrder(osv.osv, ExtendedOsv):
         workflow = netsvc.LocalService("workflow")
 
         for order in orders:
+
+            if order.is_service_only:
+                # In the case of service-only rent orders, their is nothing to do. Everythng is done by
+                # cron jobs (take a look to data/cron.xml).
+                continue
+
             in_picking_id = picking_pool.create(cr, uid, {
                 'origin' : order.out_picking_id.origin,
                 'type' : 'in',
@@ -311,7 +319,7 @@ class RentOrder(osv.osv, ExtendedOsv):
                 })
             
             self.write(cr, uid, order.id,
-                {'in_picking_id' : in_picking_id, 'state' : 'ongoing'})
+                {'in_picking_id' : in_picking_id})
             
             # Confirm the picking
             workflow.trg_validate(uid, 'stock.picking',
@@ -319,7 +327,9 @@ class RentOrder(osv.osv, ExtendedOsv):
 
             # Check assignement (TODO: This should be optional)
             picking_pool.action_assign(cr, uid, [in_picking_id])
-        
+
+        self.write(cr, uid, ids, {'state' : 'ongoing'})
+
         return True
 
     @report_bugs
@@ -638,7 +648,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         Called by the workflow. Returns True if the rent order contains only service products.
         """
         
-        return self.get(ids[0]).rent_only_services
+        return self.get(ids[0]).is_service_only
 
     @report_bugs
     def default_duration_unity(self, cr, uid, context=None):
@@ -787,9 +797,9 @@ class RentOrder(osv.osv, ExtendedOsv):
             'The picking object which handle Client->Stock moves.', ondelete='RESTRICT'),
         'description' : fields.char('Object', size=255, help=
             'A small description of the rent order. Used in the report.'),
-        'rent_only_services' : fields.function(is_service_only, method=True, type="boolean", string="Is service only", help=
-            "True if the rent order only rent service products.", store={
-                'rent.order.line' : (get_order_from_lines, None, 10),
+        'is_service_only' : fields.function(is_service_only, method=True, type="boolean", string="Is service only", help=
+            "True if the rent order only rent services products.", store={
+                'rent.order.line' : (get_order_from_lines, ['product_id'], 10),
                 'rent.order' : (lambda *a: a[3], None, 10),
             }),
         'total' : fields.function(get_totals, multi=True, method=True, type="float",
