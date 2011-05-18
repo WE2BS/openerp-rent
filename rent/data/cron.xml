@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="rent_cron" model="ir.cron" forcecreate="True">
+            <field name="name">Rent - Services Rent Cron Checker</field>
+            <field name="active" eval="1"/>
+            <field name="interval_number" eval="1"/>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall" eval="-1"/>
+            <field name="doall" eval="0"/>
+            <field name="model">rent.order</field>
+            <field name="function">run_cron_job</field>
+            <field name="user_id" ref="base.user_root"/>
+        </record>
+    </data>
+</openerp>

@@ -287,8 +287,10 @@ class RentOrder(osv.osv, ExtendedOsv):
         for order in orders:
 
             if order.is_service_only:
-                # In the case of service-only rent orders, their is nothing to do. Everythng is done by
-                # cron jobs (take a look to data/cron.xml).
+                # In the case of service-only rent orders, we got the ongoing state when the rent order begin
+                # date arrived (thanks to a cron job), or when the user manually starts the order. We have to generate
+                # the invoices when the rent starts.
+                self.action_generate_invoices(cr, uid, ids)
                 continue
 
             in_picking_id = picking_pool.create(cr, uid, {
@@ -704,6 +706,18 @@ class RentOrder(osv.osv, ExtendedOsv):
         return self.default_begin_rent(cr, uid, context)
 
     @report_bugs
+    def check_have_lines(self, cr, uid, ids, context=None):
+
+        """
+        Raises an error if the order have no lines.
+        """
+
+        for order in self.filter(ids):
+            if len(order.rent_line_ids) == 0:
+                return False
+        return True
+    
+    @report_bugs
     def is_service_only(self, cr, uid, ids, field_name, arg, context=None):
 
         """
@@ -717,6 +731,26 @@ class RentOrder(osv.osv, ExtendedOsv):
                 if line.product_type == 'rent' and line.product_id.type in ('consu', 'product'):
                     result[order.id] = False
         return result
+
+    @report_bugs
+    def run_cron_job(self, cr, uid, context=None):
+
+        """
+        This method is run every 5 minutes (by default). It will search for rent orders which have to be started/stopped.
+        This only concerns service-only rent orders, because they are not started by the workflow.
+        """
+
+        wkf_service = netsvc.LocalService("workflow")
+        
+        # Orders that need to be started (moved to ongoing state)
+        for order in self.filter(is_service_only=True, date_begin_rent__le=datetime.datetime.now(), state='confirmed'):
+            wkf_service.trg_validate(uid, 'rent.order', order.id, 'on_force_start_clicked', cr)
+            _logger.info('Started Rent Order %s' % order.ref)
+
+        # Orders that need to be stopped
+        for order in self.filter(is_service_only=True, date_end_rent__le=datetime.datetime.now(), state='ongoing'):
+            wkf_service.trg_validate(uid, 'rent.order', order.id, 'on_force_stop_clicked', cr)
+            _logger.info('Stopped Rent Order %s.' % order.ref)
 
     _name = 'rent.order'
     _sql_constraints = []
@@ -859,6 +893,10 @@ class RentOrder(osv.osv, ExtendedOsv):
         ('ref_uniq', 'unique(ref)', 'Rent Order reference must be unique !'),
         ('begin_after_create', 'check(date_begin_rent >= date_created)', 'The begin date must later than the order date.'),
         ('valid_discount', 'check(discount >= 0 AND discount <= 100)', 'Discount must be a value between 0 and 100.'),
+    ]
+
+    _constraints = [
+        (check_have_lines, "You must defines some lines in your rent order !", ['rent_line_ids']),
     ]
 
 class RentOrderLine(osv.osv, ExtendedOsv):

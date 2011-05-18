@@ -32,7 +32,7 @@
     "demo_xml": [],
     "update_xml": ['data/uoms.xml', 'data/intervals.xml', 'views/rent.xml', 'views/product.xml', 'views/menus.xml',
                    'views/sequence.xml', 'views/company.xml', 'workflow/rent.xml', 'security/ir.model.access.csv',
-                   'reports/reports.xml'],
+                   'reports/reports.xml', 'data/cron.xml'],
     "active": False,
     "test": [],
     "installable": True
