@@ -618,7 +618,8 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         # Create the lines
         lines_ids = [line.id for line in order.rent_line_ids]
-        lines_data = self.pool.get('rent.order.line').get_invoice_lines_data(cr, uid, lines_ids, line_price_factor)
+        lines_data = self.pool.get('rent.order.line').get_invoice_lines_data(cr, uid, lines_ids,
+            line_price_factor, first_invoice=(current == 1))
 
         for line_data in lines_data:
             line_data['invoice_id'] = invoice_id
@@ -1101,7 +1102,7 @@ class RentOrderLine(osv.osv, ExtendedOsv):
         return result
 
     @report_bugs
-    def get_invoice_lines_data(self, cr, uid, ids, line_price_factor, context=None):
+    def get_invoice_lines_data(self, cr, uid, ids, line_price_factor, first_invoice=False, context=None):
 
         """
         Returns a dictionary that data used to create the invoice lines.
@@ -1112,6 +1113,10 @@ class RentOrderLine(osv.osv, ExtendedOsv):
 
         for rent_line in rent_lines:
 
+            # We invoice service product only in the fisr invoice
+            if not first_invoice and rent_line.product_type == 'service':
+                continue
+            
             # The account that will be used is the income account of the product (or its category)
             invoice_line_account_id = rent_line.product_id.product_tmpl_id.property_account_income.id
             if not invoice_line_account_id:
@@ -1120,10 +1125,16 @@ class RentOrderLine(osv.osv, ExtendedOsv):
                 raise osv.except_osv(_('Error !'), _('There is no income account defined for this product: "%s" (id:%d)')
                     % (rent_line.product_id.name, rent_line.product_id.id,))
 
+            # The price factor is not applied on services product (which are invoiced only once)
+            if rent_line.product_type != 'service':
+                unit_price = rent_line.real_unit_price / line_price_factor
+            else:
+                unit_price = rent_line.real_unit_price
+
             invoice_line_data = {
                 'name': rent_line.description,
                 'account_id': invoice_line_account_id,
-                'price_unit': rent_line.real_unit_price / line_price_factor,
+                'price_unit': unit_price,
                 'quantity': rent_line.quantity,
                 'discount': rent_line.discount,
                 'product_id': rent_line.product_id.id or False,

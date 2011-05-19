@@ -117,7 +117,7 @@
                             attrs="{'invisible' : ['|',('is_service_only','!=',True),('state','!=','confirmed')]}"/>
                         <button name="on_force_stop_clicked" string="Stops the rent manually" icon="gtk-cancel"
                             attrs="{'invisible' : ['|',('is_service_only','!=',True),('state','!=','ongoing')]}"/>
-                        <button name="on_cancel_clicked" string="Cancel" states="confirmed" icon="gtk-cancel"/>
+                        <button name="on_cancel_clicked" string="Cancel" states="confirmed,ongoing" icon="gtk-cancel"/>
                         <button name="on_confirm_clicked" string="Confirm" states="draft" icon="gtk-ok"/>
                         <button name="on_show_invoices_clicked" string="Show invoices" type="object" icon="gtk-ok"
                                 states="ongoing,done"/>
