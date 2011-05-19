@@ -639,14 +639,18 @@ class RentOrder(osv.osv, ExtendedOsv):
     def get_invoices_for_month_period(self, cr, uid, order, context=None):
 
         """
-        Generates an invoice for each month of renting.
+        Generates an invoice for each month of renting. Invoices dates are based on the begin date.
+        For example, renting a produt from the January 15 for 3 months, will make 3 invoices :
+            - January 15th (First) (Period January 15th to Febuary 15th)
+            - Febuary 15th (Second) (Period Febuary 15th tu March 15th)
+            - March 15th (Last) (Period March 15th to April 15th)
         """
 
         puom = self.get_pools('product.uom')
         uom_month = self.get(category_id__name='Duration', name='Month', _object='product.uom')
 
-        order_duration_in_month = puom._compute_qty(cr, uid, order.rent_duration_unity.id,
-            order.rent_duration, uom_month.id)
+        order_duration_in_month = int(puom._compute_qty(cr, uid, order.rent_duration_unity.id,
+            order.rent_duration, uom_month.id))
         order_begin_date = to_datetime(order.date_begin_rent).date()
 
         if order_duration_in_month < 2:
@@ -657,18 +661,20 @@ class RentOrder(osv.osv, ExtendedOsv):
         current_invoice_date = order_begin_date
         invoice_ids = []
         
-        for i in range(int(order_duration_in_month)):
+        for i in range(1, order_duration_in_month+1):
+
+            # The date of the next invoice the date of the current one + 1 month
+            next_invoice_date = current_invoice_date + relativedelta(months=1)
+
+            # The end of the current period is the date of the next invoice - 1 day
+            period_end_str = (next_invoice_date - relativedelta(days=1)).strftime(DEFAULT_SERVER_DATE_FORMAT)
 
             current_invoice_date_str = current_invoice_date.strftime(DEFAULT_SERVER_DATE_FORMAT)
-            month_days_count = calendar.monthrange(current_invoice_date.year, current_invoice_date.month)[1]
-            
-            next_invoice_date = current_invoice_date + datetime.timedelta(days=month_days_count)
-            next_invoice_date_str = next_invoice_date.strftime(DEFAULT_SERVER_DATE_FORMAT)
-
-            invoice_ids.append(self.get_invoice_at(cr, uid, order, current_invoice_date_str,
-                i+1, order_duration_in_month, current_invoice_date_str, next_invoice_date_str))
+            current_invoice_id = self.get_invoice_at(cr, uid, order, current_invoice_date_str,
+                i, order_duration_in_month, current_invoice_date_str, period_end_str)
 
             current_invoice_date = next_invoice_date
+            invoice_ids.append(current_invoice_id)
 
         return invoice_ids
 
