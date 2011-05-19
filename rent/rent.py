@@ -22,7 +22,6 @@ import logging
 import math
 import netsvc
 import datetime
-import calendar
 
 from dateutil.relativedelta import *
 
