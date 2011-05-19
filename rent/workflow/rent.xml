@@ -141,5 +141,10 @@
             <field name="act_to" ref="state_done" />
             <field name="signal">on_force_stop_clicked</field>
         </record>
+        <record id="ongoing_to_cancel" model="workflow.transition">
+            <field name="act_from" ref="state_ongoing" />
+            <field name="act_to" ref="state_cancelled" />
+            <field name="signal">on_cancel_clicked</field>
+        </record>
     </data>
 </openerp>

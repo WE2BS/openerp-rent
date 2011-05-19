@@ -165,6 +165,9 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         order = self.get(ids[0])
 
+        if not order.invoices_ids:
+            raise osv.except_osv(_("No invoices"), _("This rent order has not any invoices."))
+
         action = {
             'name': '%s Invoice(s)' % order.reference,
             'view_type': 'form',
