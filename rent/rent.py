@@ -153,14 +153,14 @@ class RentOrder(osv.osv, ExtendedOsv):
         order = self.get(ids[0])
 
         action = {
-            'name': '%s Invoice(s)' % order.ref,
+            'name': '%s Invoice(s)' % order.reference,
             'view_type': 'form',
             'view_mode': 'tree,form',
             'res_model': 'account.invoice',
             'type': 'ir.actions.act_window',
             'nodestroy': True,
             'target': 'current',
-            'domain': [('origin', '=', order.ref)],
+            'domain': [('origin', '=', order.reference)],
             'context' : {'form_view_ref' : 'account.invoice_form'}
         }
 
@@ -232,7 +232,7 @@ class RentOrder(osv.osv, ExtendedOsv):
                 if not out_picking_id:
 
                     out_picking_id = picking_pool.create(cr, uid, {
-                        'origin' : order.ref,
+                        'origin' : order.reference,
                         'type' : 'out',
                         'state' : 'auto',
                         'move_type' : 'one',
@@ -571,7 +571,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         invoice_id = invoice_pool.create(cr, uid,
             {
                 'name' : _('Invoice %d/%d') % (current, max),
-                'origin' : order.ref,
+                'origin' : order.reference,
                 'type' : 'out_invoice',
                 'state' : 'draft',
                 'date_invoice' : date,
@@ -745,25 +745,25 @@ class RentOrder(osv.osv, ExtendedOsv):
         # Orders that need to be started (moved to ongoing state)
         for order in self.filter(is_service_only=True, date_begin_rent__le=datetime.datetime.now(), state='confirmed'):
             wkf_service.trg_validate(uid, 'rent.order', order.id, 'on_force_start_clicked', cr)
-            _logger.info('Started Rent Order %s' % order.ref)
+            _logger.info('Started Rent Order %s' % order.reference)
 
         # Orders that need to be stopped
         for order in self.filter(is_service_only=True, date_end_rent__le=datetime.datetime.now(), state='ongoing'):
             wkf_service.trg_validate(uid, 'rent.order', order.id, 'on_force_stop_clicked', cr)
-            _logger.info('Stopped Rent Order %s.' % order.ref)
+            _logger.info('Stopped Rent Order %s.' % order.reference)
 
     _name = 'rent.order'
     _sql_constraints = []
-    _rec_name = 'ref'
+    _rec_name = 'reference'
     _periods = {}
-    _order = 'date_created DESC,ref DESC'
+    _order = 'date_begin_rent DESC,reference DESC'
 
     _columns = {
         'state' : fields.selection(STATES, 'State', readonly=True, help=
             'Gives the state of the rent order :\n'
             '- Quotation\n- Confirmed\n- Ongoing (Products have been shipped)\n'
             '- Done (Products have been get back)'),
-        'ref' : fields.char('Reference', size=128, required=True, readonly=True,
+        'reference' : fields.char('Reference', size=128, required=True, readonly=True,
             states={'draft': [('readonly', False)]}, help='The reference is a unique identifier that identify this order.'),
         'date_created' : fields.datetime('Date', readonly=True, required=True,
             states={'draft': [('readonly', False)]}, help='Date of the creation of this order.'),
@@ -879,7 +879,7 @@ class RentOrder(osv.osv, ExtendedOsv):
             'draft',
         'salesman': # Default salesman is the curent user
             lambda self, cr, uid, context: uid,
-        'ref': # The ref sequence is defined in sequence.xml (Default: RENTXXXXXXX)
+        'reference': # The ref sequence is defined in sequence.xml (Default: RENTXXXXXXX)
             lambda self, cr, uid, context:
                 self.pool.get('ir.sequence').get(cr, uid, 'rent.order'),
         'rent_duration' : 1,
@@ -890,7 +890,7 @@ class RentOrder(osv.osv, ExtendedOsv):
     }
 
     _sql_constraints = [
-        ('ref_uniq', 'unique(ref)', 'Rent Order reference must be unique !'),
+        ('ref_uniq', 'unique(reference)', 'Rent Order reference must be unique !'),
         ('begin_after_create', 'check(date_begin_rent >= date_created)', 'The begin date must later than the order date.'),
         ('valid_discount', 'check(discount >= 0 AND discount <= 100)', 'Discount must be a value between 0 and 100.'),
     ]

@@ -25,7 +25,7 @@
             <field name="type">tree</field>
             <field name="arch" type="xml">
                 <tree string="Rent Orders" colors="blue:state in ('draft');gray:state in ('cancelled');green:state in ('done')">
-                    <field name="ref"/>
+                    <field name="reference"/>
                     <field name="date_created"/>
                     <field name="partner_id"/>
                     <field name="salesman"/>
@@ -51,7 +51,7 @@
             <field name="arch" type="xml">
                 <form string="Rent Order">
                     <group colspan="4" col="6">
-                        <field name="ref"/>
+                        <field name="reference"/>
                         <field name="date_created"/>
                         <field name="salesman"/>
                     </group>
@@ -106,7 +106,7 @@
                             <field name="notes" colspan="4" nolabel="1"/>
                         </page>
                     </notebook>
-                    <group col="7">
+                    <group col="8">
                         <field name="state"/>
                         <button name="on_draft_clicked" string="Go back to draft" states="cancelled" type="object" icon="gtk-convert"/>
                         <button name="on_force_start_clicked" string="Starts the rent manually" icon="gtk-ok"
@@ -115,6 +115,8 @@
                             attrs="{'invisible' : ['|',('is_service_only','!=',True),('state','!=','ongoing')]}"/>
                         <button name="on_cancel_clicked" string="Cancel" states="confirmed" icon="gtk-cancel"/>
                         <button name="on_confirm_clicked" string="Confirm" states="draft" icon="gtk-ok"/>
+                        <button name="on_show_invoices_clicked" string="Show invoices" type="object" icon="gtk-ok"
+                                states="ongoing,done"/>
                     </group>
                 </form>
             </field>
@@ -133,7 +135,7 @@
                     <filter string="Confirmed" icon="terp-project" domain="[('state', '=', 'confirmed')]"/>
                     <filter string="Ongoing" icon="terp-project" domain="[('state', '=', 'ongoing')]"/>
                     <separator orientation="vertical"/>
-                    <field name="ref" select="1"/>
+                    <field name="reference" select="1"/>
                     <field name="partner_id" select="1"/>
                     <field name="date_begin_rent" select="1"/>
                     <newline/>
