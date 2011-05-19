@@ -851,7 +851,7 @@ class RentOrder(osv.osv, ExtendedOsv):
     _sql_constraints = []
     _rec_name = 'reference'
     _periods = {}
-    _order = 'date_begin_rent DESC,reference DESC'
+    _order = 'date_begin_rent ASC,reference DESC'
 
     _columns = {
         'state' : fields.selection(STATES, 'State', readonly=True, help=
