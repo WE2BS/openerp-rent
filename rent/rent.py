@@ -22,6 +22,9 @@ import logging
 import math
 import netsvc
 import datetime
+import calendar
+
+from dateutil.relativedelta import *
 
 # OpenLib is a library I wrote for OpenERP, you can download it here :
 # https://github.com/WE2BS/openerp-openlib
@@ -31,7 +34,7 @@ from openlib.github import report_bugs
 
 from osv import osv, fields
 from tools.translate import _
-from tools.misc import DEFAULT_SERVER_DATETIME_FORMAT
+from tools.misc import DEFAULT_SERVER_DATETIME_FORMAT, DEFAULT_SERVER_DATE_FORMAT
 from decimal_precision import get_precision
 
 _logger = logging.getLogger('rent')
@@ -99,11 +102,21 @@ class RentOrder(osv.osv, ExtendedOsv):
         if not rent_begin or not duration or not duration_unity_id:
             return {}
         
-        # Converts the duration in days and add these days to the rent input shipping date
         day_unity = self.get(category_id__name='Duration', name='Day', _object='product.uom')
-        days = self.pool.get('product.uom')._compute_qty(cr, uid,
-            duration_unity_id, duration, day_unity.id)
-        company = self.pool.get('sale.shop').browse(cr, uid, shop_id, context=context).company_id
+        month_unity = self.get(category_id__name='Duration', name='Month', _object='product.uom')
+        year_unity = self.get(category_id__name='Duration', name='Year', _object='product.uom')
+
+        # Converts the order duration (expressed in days/month/years) into the days duration
+        if duration_unity_id == day_unity.id:
+            delta = relativedelta(days=duration)
+        elif duration_unity_id == month_unity.id:
+            delta = relativedelta(months=duration)
+        elif duration_unity_id == year_unity.id:
+            delta = relativedelta(years=duration)
+        else:
+            raise osv.except_osv(_("Error"), "Unknown duration unity with id %d" % duration_unity_id)
+
+        company = self.get(shop_id, _object='sale.shop').company_id
 
         # Depending of the widget, the begin date can be a date or a datetime
         try:
@@ -114,7 +127,7 @@ class RentOrder(osv.osv, ExtendedOsv):
             except ValueError:
                 raise osv.except_osv('Begin date have an invalid format.')
 
-        end = begin + datetime.timedelta(days=days-1) # We remove 1 day to set the return date the same day that the rent end date
+        end = (begin + delta) - relativedelta(days=1)# We remove 1 day to set the return date the same day that the rent end date
         # 'end' can be a datetime or a date object, depending of the widget.
         end = datetime.datetime.combine(end.date() if isinstance(end, datetime.datetime) else end,
             to_time(company.rent_afternoon_end))
@@ -428,15 +441,24 @@ class RentOrder(osv.osv, ExtendedOsv):
 
             begin = to_datetime(order.date_begin_rent)
             duration = order.rent_duration
+            
             day_unity = self.get(category_id__name='Duration', name='Day', _object='product.uom')
+            month_unity = self.get(category_id__name='Duration', name='Month', _object='product.uom')
+            year_unity = self.get(category_id__name='Duration', name='Year', _object='product.uom')
             
             # Converts the order duration (expressed in days/month/years) into the days duration
-            days = self.pool.get('product.uom')._compute_qty(cr, uid,
-                order.rent_duration_unity.id, duration, day_unity.id)
+            if order.rent_duration_unity.id == day_unity.id:
+                delta = relativedelta(days=duration)
+            elif order.rent_duration_unity.id == month_unity.id:
+                delta = relativedelta(months=duration)
+            elif order.rent_duration_unity.id == year_unity.id:
+                delta = relativedelta(years=duration)
+            else:
+                raise osv.except_osv(_("Error"), "Unknown duration unity: %s" % order.rent_duration_unity.name)
 
-            # Removed one day to have a more realistic duration: In the case of a 1 day duration
+            # Remove one day to have a more realistic duration: In the case of a 1 day duration
             # we except the customer to bring the products the same day, not tomorrow.
-            end = begin + datetime.timedelta(days=days-1)
+            end = (begin + delta) - relativedelta(days=1)
             end = datetime.datetime.combine(end.date(), to_time(order.company_id.rent_afternoon_end))
             end = end.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 
@@ -532,18 +554,24 @@ class RentOrder(osv.osv, ExtendedOsv):
         """
 
         # We use the lang of the partner instead of the lang of the user to put the text into the invoice.
-        partner = self.get(order.partner_id, _object='res.partner')
+        partner = self.get(order.partner_id.id, _object='res.partner')
         partner_lang = self.get(code=partner.lang, _object='res.lang')
         context = {'lang' : partner.lang}
 
         datetime_format = partner_lang.date_format + _(' at ') + partner_lang.time_format
         datetime_format = datetime_format.encode('utf-8')
+        date_format = partner_lang.date_format
+        date_format = date_format.encode('utf-8')
 
         begin_date = to_datetime(order.date_begin_rent).strftime(datetime_format).decode('utf-8')
         end_date = to_datetime(order.date_end_rent).strftime(datetime_format).decode('utf-8')
 
-        period_begin = to_datetime(period_begin).strftime(datetime_format).decode('utf-8')
-        period_end = to_datetime(period_end).strftime(datetime_format).decode('utf-8')
+        try:
+            period_begin = to_datetime(period_begin).strftime(datetime_format).decode('utf-8')
+            period_end = to_datetime(period_end).strftime(datetime_format).decode('utf-8')
+        except ValueError:
+            period_begin = to_date(period_begin).strftime(date_format).decode('utf-8')
+            period_end = to_date(period_end).strftime(date_format).decode('utf-8')
 
         return _(
             "Rental from %s to %s, invoice %d/%d.\n"
@@ -606,6 +634,43 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         return [self.get_invoice_at(cr, uid, order,
             order.date_begin_rent, 1, 1, order.date_begin_rent, order.date_end_rent)]
+
+    @report_bugs
+    def get_invoices_for_month_period(self, cr, uid, order, context=None):
+
+        """
+        Generates an invoice for each month of renting.
+        """
+
+        puom = self.get_pools('product.uom')
+        uom_month = self.get(category_id__name='Duration', name='Month', _object='product.uom')
+
+        order_duration_in_month = puom._compute_qty(cr, uid, order.rent_duration_unity.id,
+            order.rent_duration, uom_month.id)
+        order_begin_date = to_datetime(order.date_begin_rent).date()
+
+        if order_duration_in_month < 2:
+            raise osv.except_osv(_("Invalid invoice period"),
+                _("You can't use a monthly invoice period if the rent duration is less than 2 months. "
+                  "Use the 'Once' period in this case."))
+
+        current_invoice_date = order_begin_date
+        invoice_ids = []
+        
+        for i in range(int(order_duration_in_month)):
+
+            current_invoice_date_str = current_invoice_date.strftime(DEFAULT_SERVER_DATE_FORMAT)
+            month_days_count = calendar.monthrange(current_invoice_date.year, current_invoice_date.month)[1]
+            
+            next_invoice_date = current_invoice_date + datetime.timedelta(days=month_days_count)
+            next_invoice_date_str = next_invoice_date.strftime(DEFAULT_SERVER_DATE_FORMAT)
+
+            invoice_ids.append(self.get_invoice_at(cr, uid, order, current_invoice_date_str,
+                i+1, order_duration_in_month, current_invoice_date_str, next_invoice_date_str))
+
+            current_invoice_date = next_invoice_date
+
+        return invoice_ids
 
     @report_bugs
     def test_have_invoices(self, cr, uid, ids, *args):
@@ -895,9 +960,9 @@ class RentOrder(osv.osv, ExtendedOsv):
         ('valid_discount', 'check(discount >= 0 AND discount <= 100)', 'Discount must be a value between 0 and 100.'),
     ]
 
-    _constraints = [
-        (check_have_lines, "You must defines some lines in your rent order !", ['rent_line_ids']),
-    ]
+    #_constraints = [
+    #    (check_have_lines, "You must defines some lines in your rent order !", ['rent_line_ids']),
+    #]
 
 class RentOrderLine(osv.osv, ExtendedOsv):
 

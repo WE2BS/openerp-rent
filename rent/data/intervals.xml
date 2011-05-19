@@ -5,5 +5,9 @@
             <field name="name">Once</field>
             <field name="method">get_invoice_for_once_period</field>
         </record>
+        <record id="interval_month" model="rent.interval">
+            <field name="name">Monthly (Based on begin date)</field>
+            <field name="method">get_invoices_for_month_period</field>
+        </record>
     </data>
 </openerp>
