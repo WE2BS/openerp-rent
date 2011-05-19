@@ -554,9 +554,8 @@ class RentOrder(osv.osv, ExtendedOsv):
         """
 
         # We use the lang of the partner instead of the lang of the user to put the text into the invoice.
-        partner = self.get(order.partner_id.id, _object='res.partner')
-        partner_lang = self.get(code=partner.lang, _object='res.lang')
-        context = {'lang' : partner.lang}
+        partner_lang = self.get(code=order.partner_id.lang, _object='res.lang')
+        context = {'lang' : order.partner_id.lang}
 
         datetime_format = partner_lang.date_format + _(' at ') + partner_lang.time_format
         datetime_format = datetime_format.encode('utf-8')
@@ -594,7 +593,11 @@ class RentOrder(osv.osv, ExtendedOsv):
         defines the maximum number of invoices and the current invoice number. For example: current=4, max=12.
         """
 
-        invoice_pool, invoice_line_pool = map(self.pool.get, ('account.invoice', 'account.invoice.line'))
+        invoice_pool, invoice_line_pool = self.get_pools('account.invoice', 'account.invoice.line')
+
+        # We create a "fake" context variable which contains the customer language language to translate
+        # the invoice name correctly.
+        context = {'lang' : order.partner_id.lang}
 
         # Create the invoice
         invoice_id = invoice_pool.create(cr, uid,
