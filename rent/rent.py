@@ -586,7 +586,8 @@ class RentOrder(osv.osv, ExtendedOsv):
         )
 
     @report_bugs
-    def get_invoice_at(self, cr, uid, order, date, current, max, invoice_period_begin, invoice_period_end):
+    def get_invoice_at(self, cr, uid, order, date, current, max, invoice_period_begin,
+                       invoice_period_end, line_price_factor=1.0):
 
         """
         Generates an invoice at the specified date. The two last arguenbts current and max
@@ -614,7 +615,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         # Create the lines
         lines_ids = [line.id for line in order.rent_line_ids]
-        lines_data = self.pool.get('rent.order.line').get_invoice_lines_data(cr, uid, lines_ids)
+        lines_data = self.pool.get('rent.order.line').get_invoice_lines_data(cr, uid, lines_ids, line_price_factor)
 
         for line_data in lines_data:
             line_data['invoice_id'] = invoice_id
@@ -646,10 +647,14 @@ class RentOrder(osv.osv, ExtendedOsv):
             - March 15th (Last) (Period March 15th to April 15th)
         """
 
-        puom = self.get_pools('product.uom')
         uom_month = self.get(category_id__name='Duration', name='Month', _object='product.uom')
+        uom_year = self.get(category_id__name='Duration', name='Year', _object='product.uom')
 
-        order_duration_in_month = int(puom._compute_qty(cr, uid, order.rent_duration_unity.id,
+        if order.rent_duration_unity.id not in (uom_month.id, uom_year.id):
+            raise osv.except_osv(_("Invalid duration unity"),
+                _("You must use a Month or Year unity with a Monthly invoicing period."))
+
+        order_duration_in_month = int(self.pool.get('product.uom')._compute_qty(cr, uid, order.rent_duration_unity.id,
             order.rent_duration, uom_month.id))
         order_begin_date = to_datetime(order.date_begin_rent).date()
 
@@ -660,7 +665,19 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         current_invoice_date = order_begin_date
         invoice_ids = []
-        
+
+        # The line price factor is applied on each invoice line. For example, if we make 12 invoices for a
+        # rent duration of 1 Year, the price factor will be 12 : Each line price will be divided by 12.
+        #
+        # We have to do this because the unit price of the product is expressed in the order duration unity,
+        # so if the unit price of a product is 1200€/Year, each line unit price is by default 1200. Without the
+        # factor, we would have 12 invoices at 1200€ !
+        #
+        # In the case of a price expressed in month, there is no problem, and the factor is just 1.
+        line_price_factor = 1.0
+        if order.rent_duration_unity.id == uom_year.id:
+            line_price_factor = 12.0
+
         for i in range(1, order_duration_in_month+1):
 
             # The date of the next invoice the date of the current one + 1 month
@@ -671,7 +688,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
             current_invoice_date_str = current_invoice_date.strftime(DEFAULT_SERVER_DATE_FORMAT)
             current_invoice_id = self.get_invoice_at(cr, uid, order, current_invoice_date_str,
-                i, order_duration_in_month, current_invoice_date_str, period_end_str)
+                i, order_duration_in_month, current_invoice_date_str, period_end_str, line_price_factor)
 
             current_invoice_date = next_invoice_date
             invoice_ids.append(current_invoice_id)
@@ -1081,7 +1098,7 @@ class RentOrderLine(osv.osv, ExtendedOsv):
         return result
 
     @report_bugs
-    def get_invoice_lines_data(self, cr, uid, ids, context=None):
+    def get_invoice_lines_data(self, cr, uid, ids, line_price_factor, context=None):
 
         """
         Returns a dictionary that data used to create the invoice lines.
@@ -1103,7 +1120,7 @@ class RentOrderLine(osv.osv, ExtendedOsv):
             invoice_line_data = {
                 'name': rent_line.description,
                 'account_id': invoice_line_account_id,
-                'price_unit': rent_line.real_unit_price,
+                'price_unit': rent_line.real_unit_price / line_price_factor,
                 'quantity': rent_line.quantity,
                 'discount': rent_line.discount,
                 'product_id': rent_line.product_id.id or False,
