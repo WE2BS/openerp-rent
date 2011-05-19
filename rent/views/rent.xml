@@ -61,13 +61,15 @@
                     </group>
                     <notebook colspan="4">
                         <page string="Rent Order">
-                            <field name="partner_id" on_change="on_client_changed(partner_id)"/>
-                            <field name="partner_order_address_id" groups="base.group_extended"
-                                   domain="[('partner_id', '=', partner_id)]"/>
-                            <field name="partner_shipping_address_id" groups="base.group_extended"
-                                   domain="[('partner_id', '=', partner_id)]"/>
-                            <field name="partner_invoice_address_id" groups="base.group_extended"
-                                   domain="[('partner_id', '=', partner_id)]"/>
+                            <group colspan="4">
+                                <field name="partner_id" on_change="on_client_changed(partner_id)"/>
+                                <field name="partner_order_address_id" groups="base.group_extended"
+                                       domain="[('partner_id', '=', partner_id)]"/>
+                                <field name="partner_shipping_address_id" groups="base.group_extended"
+                                       domain="[('partner_id', '=', partner_id)]"/>
+                                <field name="partner_invoice_address_id" groups="base.group_extended"
+                                       domain="[('partner_id', '=', partner_id)]"/>
+                            </group>
                             <group colspan="4" col="6">
                                 <field name="date_begin_rent"
                                     on_change="on_duration_changed(date_begin_rent,rent_duration,rent_duration_unity,shop_id,context)"/>
@@ -79,7 +81,9 @@
                                     on_change="on_duration_changed(date_begin_rent,rent_duration,rent_duration_unity,shop_id,context)"/>
                                 <field name="rent_invoice_period"/>
                             </group>
-                            <field name="description" colspan="4"/>
+                            <group colspan="4" col="2">
+                                <field name="description" colspan="4"/>
+                            </group>
                             <field name="rent_line_ids" nolabel="1" colspan="4"
                                 context="{'duration' : rent_duration, 'duration_unity' : rent_duration_unity}"/>
                             <group colspan="4" col="7">
