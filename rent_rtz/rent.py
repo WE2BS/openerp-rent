@@ -152,7 +152,7 @@ class RentOrderRtzLine(osv.osv, ExtendedOsv):
     }
 
     _sql_constraints = [
-        ('valid_coeff', 'check(coeff > 0)', _('The coefficient must be superior to 0.')),
+        ('valid_coeff', 'check(coeff > 0)', 'The coefficient must be superior to 0.'),
     ]
 
 RentOrderRtzLine()

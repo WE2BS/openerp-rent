@@ -731,7 +731,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         """
         Called by the workflow. Returns True once the product has been input shipped.
         """
-
+        print ids[0]
         order = self.get(ids[0])
         if not order.in_picking_id:
             return False
