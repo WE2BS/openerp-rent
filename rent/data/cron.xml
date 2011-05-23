@@ -9,7 +9,18 @@
             <field name="numbercall" eval="-1"/>
             <field name="doall" eval="0"/>
             <field name="model">rent.order</field>
-            <field name="function">run_cron_job</field>
+            <field name="function">run_cron_start_stop_rents</field>
+            <field name="user_id" ref="base.user_root"/>
+        </record>
+        <record id="rent_cron_invoices" model="ir.cron" forcecreate="True">
+            <field name="name">Rent - Invoices Cron</field>
+            <field name="active" eval="1"/>
+            <field name="interval_number" eval="1"/>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall" eval="-1"/>
+            <field name="doall" eval="0"/>
+            <field name="model">rent.order</field>
+            <field name="function">run_cron_make_invoices</field>
             <field name="user_id" ref="base.user_root"/>
         </record>
     </data>

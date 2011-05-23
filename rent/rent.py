@@ -587,8 +587,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         )
 
     @report_bugs
-    def get_invoice_at(self, cr, uid, order, date, current, max, invoice_period_begin,
-                       invoice_period_end, line_price_factor=1.0):
+    def get_invoice_at(self, cr, uid, order, data):
 
         """
         Generates an invoice at the specified date. The two last arguenbts current and max
@@ -602,26 +601,30 @@ class RentOrder(osv.osv, ExtendedOsv):
         context = {'lang' : order.partner_id.lang}
 
         # Create the invoice
+        invoice_date_str = data['date'].strftime(DEFAULT_SERVER_DATE_FORMAT)
+        invoice_period_begin_str = data['period_begin'].strftime(DEFAULT_SERVER_DATE_FORMAT)
+        invoice_period_end_str = data['period_end'].strftime(DEFAULT_SERVER_DATE_FORMAT)
         invoice_id = invoice_pool.create(cr, uid,
             {
-                'name' : _('Invoice %d/%d') % (current, max),
+                'name' : _('Invoice %d/%d') % (data['invoice_number'], data['invoice_count']),
                 'origin' : order.reference,
                 'type' : 'out_invoice',
                 'state' : 'draft',
-                'date_invoice' : date,
+                'date_invoice' : invoice_date_str,
                 'partner_id' : order.partner_id.id,
                 'address_invoice_id' : order.partner_invoice_address_id.id,
                 'account_id' : order.partner_id.property_account_receivable.id,
                 'fiscal_position' : order.fiscal_position.id,
                 'comment' : self.get_invoice_comment(
-                    cr, uid, order, date, current, max, invoice_period_begin, invoice_period_end),
+                    cr, uid, order, invoice_date_str, data['invoice_number'], data['invoice_count'],
+                    invoice_period_begin_str, invoice_period_end_str),
             }
         )
 
         # Create the lines
         lines_ids = [line.id for line in order.rent_line_ids]
         lines_data = self.pool.get('rent.order.line').get_invoice_lines_data(cr, uid, lines_ids,
-            line_price_factor, first_invoice=(current == 1))
+            data['price_factor'], first_invoice=(data['invoice_number'] == 1))
 
         for line_data in lines_data:
             line_data['invoice_id'] = invoice_id
@@ -639,8 +642,14 @@ class RentOrder(osv.osv, ExtendedOsv):
         Generates only one invoice (at the end of the rent).
         """
 
-        return [self.get_invoice_at(cr, uid, order,
-            order.date_begin_rent, 1, 1, order.date_begin_rent, order.date_end_rent)]
+        return [{
+            'date' : to_datetime(order.date_begin_rent).date(),
+            'invoice_number' : 1,
+            'invoice_count' : 1,
+            'period_begin' : to_datetime(order.date_begin_rent),
+            'period_end' : to_datetime(order.date_end_rent),
+            'price_factor' : 1.0
+        }]
 
     @report_bugs
     def get_invoices_for_month_period(self, cr, uid, order, context=None):
@@ -670,7 +679,7 @@ class RentOrder(osv.osv, ExtendedOsv):
                   "Use the 'Once' period in this case."))
 
         current_invoice_date = order_begin_date
-        invoice_ids = []
+        result = []
 
         # The line price factor is applied on each invoice line. For example, if we make 12 invoices for a
         # rent duration of 1 Year, the price factor will be 12 : Each line price will be divided by 12.
@@ -690,16 +699,50 @@ class RentOrder(osv.osv, ExtendedOsv):
             next_invoice_date = current_invoice_date + relativedelta(months=1)
 
             # The end of the current period is the date of the next invoice - 1 day
-            period_end_str = (next_invoice_date - relativedelta(days=1)).strftime(DEFAULT_SERVER_DATE_FORMAT)
+            period_end = (next_invoice_date - relativedelta(days=1))
 
-            current_invoice_date_str = current_invoice_date.strftime(DEFAULT_SERVER_DATE_FORMAT)
-            current_invoice_id = self.get_invoice_at(cr, uid, order, current_invoice_date_str,
-                i, order_duration_in_month, current_invoice_date_str, period_end_str, line_price_factor)
-
+            current_invoice_data = {
+                'date' : current_invoice_date,
+                'invoice_number' : i,
+                'invoice_count' : order_duration_in_month,
+                'period_begin' : current_invoice_date,
+                'period_end' : period_end,
+                'price_factor' : line_price_factor,
+            }
             current_invoice_date = next_invoice_date
-            invoice_ids.append(current_invoice_id)
+            result.append(current_invoice_data)
 
-        return invoice_ids
+        return result
+
+    @report_bugs
+    def get_invoices_data(self, cr, uid, orders, context=None):
+
+        """
+        Returns the invoices data of the specified orders. The result is a dictionary containing ids as keys,
+        and a list of data dictionaries as value. Here are the data keys :
+
+            date : The date of the invoice
+            invoice_number : The number of the current invoice
+            invoice_count : The total number of invoices
+            period_begin : The begin date of the period being invoiced
+            period_end : The end date of the period begin invoiced
+            price_factor : This factor will be used during invoice generation
+
+        """
+
+        result = {}
+
+        for order in orders:
+
+            period_function = order.rent_invoice_period.method
+            period_function = getattr(self, period_function)
+
+            if not period_function:
+                raise osv.except_osv('Programming Error', 'The invoice interval method "%s" does not exist.')
+
+            result[order.id] = period_function(cr, uid, order, context)
+
+        return result
 
     @report_bugs
     def test_have_invoices(self, cr, uid, ids, *args):
@@ -827,7 +870,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         return result
 
     @report_bugs
-    def run_cron_job(self, cr, uid, context=None):
+    def run_cron_start_stop_rents(self, cr, uid, context=None):
 
         """
         This method is run every 5 minutes (by default). It will search for rent orders which have to be started/stopped.
@@ -845,6 +888,30 @@ class RentOrder(osv.osv, ExtendedOsv):
         for order in self.filter(is_service_only=True, date_end_rent__le=datetime.datetime.now(), state='ongoing'):
             wkf_service.trg_validate(uid, 'rent.order', order.id, 'on_force_stop_clicked', cr)
             _logger.info('Stopped Rent Order %s.' % order.reference)
+
+    @report_bugs
+    def run_cron_make_invoices(self, cr, uid, context=None):
+
+        """
+        This cron make invoices that have to be done.
+        """
+
+        orders = self.filter(state='ongoing')
+        orders_invoices_data = self.get_invoices_data(cr, uid, orders, context)
+
+        for order in orders:
+            invoices_data = orders_invoices_data.get(order.id, [])
+            for invoice_data in invoices_data:
+                # We check if an invoice has already been created at the specified date
+                found = False
+                for order_invoice in order.invoices_ids:
+                    if to_date(order_invoice.date) == invoice_data['date']:
+                        found = True
+                        break
+                # If it hasn't been created yet and it must be created, we create it.
+                if not found and invoice_data['date'] <= datetime.datetime.today() :
+                    new_invoice_id = self.get_invoice_at(cr, uid, order, invoice_data)
+                    self.write(cr, uid, order.id, {'invoices_ids' : [(4, new_invoice_id)]})
 
     _name = 'rent.order'
     _sql_constraints = []
