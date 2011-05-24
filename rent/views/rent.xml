@@ -35,7 +35,7 @@
                     <field name="date_end_rent"/>
                     <field name="total_with_discount" string="Untaxed Total" sum="Total"/>
                     <field name="total_with_taxes_with_discount" string="Total"/>
-                    <button name="on_show_invoices_clicked" type="object"  icon="terp-account"
+                    <button name="action_show_invoices" type="object"  icon="terp-account"
                         string="Show invoices" states="ongoing,done,confirmed"/>
                 </tree>
             </field>
