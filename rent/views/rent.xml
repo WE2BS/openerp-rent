@@ -110,7 +110,7 @@
                             <field name="notes" colspan="4" nolabel="1"/>
                         </page>
                     </notebook>
-                    <group col="9">
+                    <group col="8">
                         <field name="state"/>
                         <button name="on_draft_clicked" string="Go back to draft" states="cancelled" type="object" icon="gtk-convert"/>
                         <button name="on_force_start_clicked" string="Starts the rent manually" icon="gtk-ok"
@@ -122,8 +122,6 @@
                         <button name="on_confirm_clicked" string="Confirm" states="draft" icon="gtk-ok"/>
                         <button name="on_generate_invoices_clicked" string="Generate invoices manually" type="object"
                                 icon="gtk-execute" states="ongoing,confirmed"/>
-                        <button name="on_show_invoices_clicked" string="Show invoices" type="object" icon="gtk-ok"
-                                states="ongoing,done"/>
                     </group>
                 </form>
             </field>

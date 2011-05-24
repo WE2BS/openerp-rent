@@ -58,7 +58,7 @@
             <field name="state">code</field>
             <field name="model_id" ref="model_rent_order"/>
             <field eval="5" name="sequence"/>
-            <field name="code">action = self.on_show_invoices_clicked(cr, uid, [context.get('active_id')], context)</field>
+            <field name="code">action = self.action_show_invoices(cr, uid, [context.get('active_id')], context)</field>
             <field name="name">Invoices</field>
         </record>
         <record id="action_show_invoices" model="ir.values">

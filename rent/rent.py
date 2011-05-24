@@ -156,7 +156,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         return True
 
     @report_bugs
-    def on_show_invoices_clicked(self, cr, uid, ids, context=None):
+    def action_show_invoices(self, cr, uid, ids, context=None):
 
         """
         Show the invoices which have been generated.
