@@ -110,16 +110,18 @@
                             <field name="notes" colspan="4" nolabel="1"/>
                         </page>
                     </notebook>
-                    <group col="8">
+                    <group col="9">
                         <field name="state"/>
                         <button name="on_draft_clicked" string="Go back to draft" states="cancelled" type="object" icon="gtk-convert"/>
                         <button name="on_force_start_clicked" string="Starts the rent manually" icon="gtk-ok"
                             attrs="{'invisible' : ['|',('is_service_only','!=',True),('state','!=','confirmed')]}"/>
                         <button name="on_force_stop_clicked" string="Stops the rent manually" icon="gtk-cancel"
                             attrs="{'invisible' : ['|',('is_service_only','!=',True),('state','!=','ongoing')]}"
-                            confirm="Are you sure that you want to stop this rent order now ?"/>
+                            confirm="Are you sure that you want to stop this rent order now ? You can't restart a stopped order!"/>
                         <button name="on_cancel_clicked" string="Cancel" states="confirmed,ongoing" icon="gtk-cancel"/>
                         <button name="on_confirm_clicked" string="Confirm" states="draft" icon="gtk-ok"/>
+                        <button name="on_generate_invoices_clicked" string="Generate invoices manually" type="object"
+                                icon="gtk-execute" states="ongoing,confirmed"/>
                         <button name="on_show_invoices_clicked" string="Show invoices" type="object" icon="gtk-ok"
                                 states="ongoing,done"/>
                     </group>

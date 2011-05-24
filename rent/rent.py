@@ -186,6 +186,17 @@ class RentOrder(osv.osv, ExtendedOsv):
         return action
 
     @report_bugs
+    def on_generate_invoices_clicked(self, cr, uid, ids, context=None):
+
+        """
+        Trigger the cron job which generates the invoices when the user clicks on the button.
+        """
+
+        self.run_cron_make_invoices(cr, uid, context)
+        
+        return False
+
+    @report_bugs
     def action_confirmed(self, cr, uid, ids):
 
         """
