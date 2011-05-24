@@ -19,7 +19,7 @@
 
 {
     "name": "Rent",
-    "version": "0.2",
+    "version": "0.4",
     "author": "UIDE/WE2BS",
     "category": "Generic Modules/Sales & Purchases",
     "website": "https://github.com/thibautd/openerp-rent",
