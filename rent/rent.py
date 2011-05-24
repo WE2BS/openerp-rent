@@ -356,20 +356,6 @@ class RentOrder(osv.osv, ExtendedOsv):
         This action is called by the workflow activity 'ongoing'. We generate invoices for the duration period.
         """
 
-        orders = self.filter(ids)
-
-        for order in orders:
-
-            period_function = order.rent_invoice_period.method
-            period_function = getattr(self, period_function)
-
-            if not period_function:
-                raise osv.except_osv('Programming Error', 'The invoice interval method "%s" does not exist.')
-
-            invoices_id = period_function(cr, uid, order, context)
-
-        self.write(cr, uid, ids, {'invoices_ids' : [(6, 0, invoices_id)]})
-
         return True
 
     @report_bugs
@@ -657,9 +643,9 @@ class RentOrder(osv.osv, ExtendedOsv):
         """
         Generates an invoice for each month of renting. Invoices dates are based on the begin date.
         For example, renting a produt from the January 15 for 3 months, will make 3 invoices :
-            - January 15th (First) (Period January 15th to Febuary 15th)
-            - Febuary 15th (Second) (Period Febuary 15th tu March 15th)
-            - March 15th (Last) (Period March 15th to April 15th)
+            - January 15th (First) (Period January 15th to Febuary 14th)
+            - Febuary 15th (Second) (Period Febuary 15th tu March 14th)
+            - March 15th (Last) (Period March 15th to April 14th)
         """
 
         uom_month = self.get(category_id__name='Duration', name='Month', _object='product.uom')
@@ -896,22 +882,35 @@ class RentOrder(osv.osv, ExtendedOsv):
         This cron make invoices that have to be done.
         """
 
-        orders = self.filter(state='ongoing')
+        orders = self.filter(Q(state='ongoing')|Q(state='confirmed'))
         orders_invoices_data = self.get_invoices_data(cr, uid, orders, context)
 
         for order in orders:
+
+            _logger.debug('Checking invoices of rent order %s' % order.reference)
+
+            # This variable contains a list of data used to create invoices of this order
+            # Each list entry is a dictionary, check get_invoices_data() for more infos.
             invoices_data = orders_invoices_data.get(order.id, [])
+
             for invoice_data in invoices_data:
-                # We check if an invoice has already been created at the specified date
-                found = False
-                for order_invoice in order.invoices_ids:
-                    if to_date(order_invoice.date) == invoice_data['date']:
-                        found = True
-                        break
-                # If it hasn't been created yet and it must be created, we create it.
-                if not found and invoice_data['date'] <= datetime.datetime.today() :
-                    new_invoice_id = self.get_invoice_at(cr, uid, order, invoice_data)
-                    self.write(cr, uid, order.id, {'invoices_ids' : [(4, new_invoice_id)]})
+
+                # For each invoice data, we check if the corresponding invoice has already been created,
+                # and we create it if it has to be (Invoice date <= today)
+                if invoice_data['date'].strftime(DEFAULT_SERVER_DATE_FORMAT)\
+                in [inv.date_invoice for inv in order.invoices_ids]:
+                    _logger.debug('Invoice dated %s already exists, skipped', invoice_data['date'])
+                    continue
+
+                if invoice_data['date'] <= datetime.date.today() :
+
+                    _logger.info('Creating invoice dated %s for rent order %s...',
+                        invoice_data['date'], order.reference)
+
+                    invoice_id = self.get_invoice_at(cr, uid, order, invoice_data)
+                    self.write(cr, uid, order.id, {'invoices_ids' : [(4, invoice_id)]})
+
+        _logger.debug('Finished rent orders invoice generation')
 
     _name = 'rent.order'
     _sql_constraints = []
@@ -1182,7 +1181,7 @@ class RentOrderLine(osv.osv, ExtendedOsv):
 
         for rent_line in rent_lines:
 
-            # We invoice service product only in the fisr invoice
+            # We invoice service product only in the first invoice
             if not first_invoice and rent_line.product_type == 'service':
                 continue
             
@@ -1196,9 +1195,9 @@ class RentOrderLine(osv.osv, ExtendedOsv):
 
             # The price factor is not applied on services product (which are invoiced only once)
             if rent_line.product_type != 'service':
-                unit_price = rent_line.real_unit_price / line_price_factor
+                unit_price = rent_line.duration_unit_price / line_price_factor
             else:
-                unit_price = rent_line.real_unit_price
+                unit_price = rent_line.duration_unit_price
 
             invoice_line_data = {
                 'name': rent_line.description,
