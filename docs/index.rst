@@ -16,8 +16,12 @@ available with OpenERP Rent :
     * Automatic invoice creation in background when needed
     * Easy to configure report based on Aeroo Report engine
 
+Try it, and feel free to send bugs or feature request on the github project's page : http://github.com/WE2BS/openerp-rent
+
 .. toctree::
    :maxdepth: 2
+
+   install
 
 Indices and tables
 ==================
