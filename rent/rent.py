@@ -361,13 +361,39 @@ class RentOrder(osv.osv, ExtendedOsv):
         return True
 
     @report_bugs
-    def action_generate_invoices(self, cr, uid, ids, context=None):
+    def action_show_shipping(self, cr, uid, ids, type, context=None):
 
         """
-        This action is called by the workflow activity 'ongoing'. We generate invoices for the duration period.
+        Open the associated incoming shipment, or raise an error.
         """
 
-        return True
+        order = self.get(ids[0])
+
+        if type == 'in' and not order.in_picking_id:
+            raise osv.except_osv(_('No Incoming Shipment'),
+                _("There is no incoming shipment associated to this rent order. It might be a service-only rent order, "
+                "or the rent order hasn't been delivered yet.") )
+        elif type == 'out' and not order.out_picking_id:
+            raise osv.except_osv(_('No Delivery Order'),
+                _("There is no delivery order associated to this rent order. It might be a service-only rent order, "
+                "or the rent order hasn't been confirmed yet.") )
+
+        value = {
+            'name' : 'Incoming Shipment',
+            'type' : 'ir.actions.act_window',
+            'view_type' : 'form',
+            'view_mode' : 'form,tree',
+            'res_model' : 'stock.picking',
+        }
+
+        if type == 'out':
+            value['name'] = 'Delivery Order'
+            value['res_id'] = order.out_picking_id.id
+        else:
+            value['name'] = 'Incoming Shipment'
+            value['res_id'] = order.in_picking_id.id
+            
+        return value
 
     @report_bugs
     def action_cancel(self, cr, uid, ids):

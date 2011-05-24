@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <openerp>
     <data>
+        <!--
+            Basic Menu (Sales->Sale Orders)
+        -->
         <record model="ir.actions.act_window" id="rent_action_form">
             <field name="name">Rent Order</field>
             <field name="res_model">rent.order</field>
@@ -11,5 +14,60 @@
         </record>
         <menuitem id="rent_order_menu" parent="base.menu_sales" groups="base.group_sale_salesman"
                   name="Rent Orders" action="rent_action_form"/>
+
+        <!--
+            Right panel actions
+        -->
+        <record id="action_server_show_delivery_order" model="ir.actions.server">
+            <field name="type">ir.actions.server</field>
+            <field name="condition">True</field>
+            <field name="state">code</field>
+            <field name="model_id" ref="model_rent_order"/>
+            <field eval="5" name="sequence"/>
+            <field name="code">action = self.action_show_shipping(cr, uid, [context.get('active_id')], 'out', context)</field>
+            <field name="name">Delivery Order</field>
+        </record>
+        <record id="action_show_delivery_order" model="ir.values">
+            <field name="object" eval="1" />
+            <field name="name">Delivery Order</field>
+            <field name="key2">client_action_relate</field>
+            <field name="value" eval="'ir.actions.server,%d'%action_server_show_delivery_order"/>
+            <field name="key">action</field>
+            <field name="model">rent.order</field>
+        </record>
+        <record id="action_server_show_incoming_shipment" model="ir.actions.server">
+            <field name="type">ir.actions.server</field>
+            <field name="condition">True</field>
+            <field name="state">code</field>
+            <field name="model_id" ref="model_rent_order"/>
+            <field eval="5" name="sequence"/>
+            <field name="code">action = self.action_show_shipping(cr, uid, [context.get('active_id')], 'in', context)</field>
+            <field name="name">Incoming Shipment</field>
+        </record>
+        <record id="action_show_incoming_shipment" model="ir.values">
+            <field name="object" eval="1" />
+            <field name="name">Incoming Shipment</field>
+            <field name="key2">client_action_relate</field>
+            <field name="value" eval="'ir.actions.server,%d'%action_server_show_incoming_shipment"/>
+            <field name="key">action</field>
+            <field name="model">rent.order</field>
+        </record>
+        <record id="action_server_show_invoices" model="ir.actions.server">
+            <field name="type">ir.actions.server</field>
+            <field name="condition">True</field>
+            <field name="state">code</field>
+            <field name="model_id" ref="model_rent_order"/>
+            <field eval="5" name="sequence"/>
+            <field name="code">action = self.on_show_invoices_clicked(cr, uid, [context.get('active_id')], context)</field>
+            <field name="name">Invoices</field>
+        </record>
+        <record id="action_show_invoices" model="ir.values">
+            <field name="object" eval="1" />
+            <field name="name">Invoices</field>
+            <field name="key2">client_action_relate</field>
+            <field name="value" eval="'ir.actions.server,%d'%action_server_show_invoices"/>
+            <field name="key">action</field>
+            <field name="model">rent.order</field>
+        </record>
     </data>
 </openerp>
