@@ -7,4 +7,5 @@
 --      psql -f Migrate-0.3-To-0.4.sql <database>
 --
 
+-- Renamed column 'ref' to 'reference' in rent.order object
 ALTER TABLE rent_order RENAME ref TO reference;
