@@ -4,7 +4,7 @@
         <record id="rent_cron" model="ir.cron" forcecreate="True">
             <field name="name">Rent - Services Rent Cron Checker</field>
             <field name="active" eval="1"/>
-            <field name="interval_number" eval="1"/>
+            <field name="interval_number" eval="360"/>
             <field name="interval_type">minutes</field>
             <field name="numbercall" eval="-1"/>
             <field name="doall" eval="0"/>
@@ -16,7 +16,7 @@
             <field name="name">Rent - Invoices Cron</field>
             <field name="active" eval="1"/>
             <field name="interval_number" eval="1"/>
-            <field name="interval_type">minutes</field>
+            <field name="interval_type">days</field>
             <field name="numbercall" eval="-1"/>
             <field name="doall" eval="0"/>
             <field name="model">rent.order</field>
