@@ -313,10 +313,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         for order in orders:
 
             if order.is_service_only:
-                # In the case of service-only rent orders, we got the ongoing state when the rent order begin
-                # date arrived (thanks to a cron job), or when the user manually starts the order. We have to generate
-                # the invoices when the rent starts.
-                self.action_generate_invoices(cr, uid, ids)
+                # In the case of service-only rent orders, we don't generate any picking
                 continue
 
             in_picking_id = picking_pool.create(cr, uid, {
