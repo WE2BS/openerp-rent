@@ -946,6 +946,26 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         _logger.debug('Finished rent orders invoice generation')
 
+    def copy(self, cr, uid, id, default=None, context=None):
+
+        """
+        We have to generate a new reference when we copy the object.
+        """
+
+        if not default:
+            default = {}
+
+        default.update({
+            'state': 'draft',
+            'invoices_ids': [],
+            'out_picking_id': False,
+            'in_picking_id' : False,
+            'reference': self.pool.get('ir.sequence').get(cr, uid, 'rent.order'),
+        })
+        
+        return super(RentOrder, self).copy(cr, uid, id, default, context=context)
+
+
     _name = 'rent.order'
     _rec_name = 'reference'
     _order = 'date_begin_rent ASC,reference DESC'
