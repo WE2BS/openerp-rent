@@ -711,7 +711,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         # In the case of a price expressed in month, there is no problem, and the factor is just 1.
         line_price_factor = 1.0
         if order.rent_duration_unity.id == uom_year.id:
-            line_price_factor = 12.0
+            line_price_factor = 12.0 * order.rent_duration
 
         for i in range(1, order_duration_in_month+1):
 
@@ -947,9 +947,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         _logger.debug('Finished rent orders invoice generation')
 
     _name = 'rent.order'
-    _sql_constraints = []
     _rec_name = 'reference'
-    _periods = {}
     _order = 'date_begin_rent ASC,reference DESC'
 
     _columns = {
@@ -1088,10 +1086,6 @@ class RentOrder(osv.osv, ExtendedOsv):
         ('begin_after_create', 'check(date_begin_rent >= date_created)', 'The begin date must later than the order date.'),
         ('valid_discount', 'check(discount >= 0 AND discount <= 100)', 'Discount must be a value between 0 and 100.'),
     ]
-
-    #_constraints = [
-    #    (check_have_lines, "You must defines some lines in your rent order !", ['rent_line_ids']),
-    #]
 
 class RentOrderLine(osv.osv, ExtendedOsv):
 
