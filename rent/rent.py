@@ -946,6 +946,7 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         _logger.debug('Finished rent orders invoice generation')
 
+    @report_bugs
     def check_period_and_unity(self, cr, uid, ids, context=None):
 
         """
@@ -958,6 +959,7 @@ class RentOrder(osv.osv, ExtendedOsv):
                 return False
         return True
 
+    @report_bugs
     def copy(self, cr, uid, id, default=None, context=None):
 
         """
@@ -977,6 +979,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         
         return super(RentOrder, self).copy(cr, uid, id, default, context=context)
 
+    @report_bugs
     def unlink(self, cr, uid, ids, context=None):
 
         """
