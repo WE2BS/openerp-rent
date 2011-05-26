@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OpenERP Server 6.0.2\n"
 "Report-Msgid-Bugs-To: support@openerp.com\n"
-"POT-Creation-Date: 2011-05-19 14:10+0000\n"
-"PO-Revision-Date: 2011-05-19 14:10+0000\n"
+"POT-Creation-Date: 2011-05-26 10:18+0000\n"
+"PO-Revision-Date: 2011-05-26 10:18+0000\n"
 "Last-Translator: <>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,6 +26,11 @@ msgid "You can't use this product type with this product. Check that the product
 msgstr "Vous ne pouvez pas utiliser ce produit avec ce type de produit. Vérifiez que le produit peut être loué ou acheté. De plus, les produits de type 'Service' doivent être défini comme tel dans la fiche produit."
 
 #. module: rent
+#: model:ir.actions.server,name:rent.action_server_show_delivery_order
+msgid "Delivery Order"
+msgstr "Bon de livraison"
+
+#. module: rent
 #: code:addons/rent/rent.py:168
 #, python-format
 msgid "No invoices"
@@ -42,7 +47,7 @@ msgid "The price per duration or the sale price, depending of the product type. 
 msgstr "Le prix par unité de durée, ou le prix de vente, selon le type de produit. Pour les produits loués, le prix est exprimé en unité de durée du PRODUIT, pas l'unité du bon de location."
 
 #. module: rent
-#: code:addons/rent/rent.py:660
+#: code:addons/rent/rent.py:689
 #, python-format
 msgid "You must use a Month or Year unity with a Monthly invoicing period."
 msgstr "Vous devez utiliser des Mois ou des Années comme unité pour l'interval de facturation mensuel."
@@ -137,7 +142,7 @@ msgid "Invoiced percent, calculated on the numver if invoices confirmed."
 msgstr "Pourcentage facturé, calculé à partir du nombre de factures confirmées."
 
 #. module: rent
-#: code:addons/rent/rent.py:667
+#: code:addons/rent/rent.py:696
 #, python-format
 msgid "Invalid invoice period"
 msgstr "Interval de facturation invalide"
@@ -206,6 +211,11 @@ msgid "Duration Unit Price"
 msgstr "Prix par durée"
 
 #. module: rent
+#: field:rent.order,rent_duration_unity:0
+msgid "Unity"
+msgstr "Unité"
+
+#. module: rent
 #: model:rent.interval,name:rent.interval_once
 msgid "Once"
 msgstr "Une seule facture"
@@ -253,7 +263,7 @@ msgid "Lines of this rent order."
 msgstr "Lignes de ce bon de location."
 
 #. module: rent
-#: code:addons/rent/rent.py:394
+#: code:addons/rent/rent.py:414
 #, python-format
 msgid "This order have confirmed invoice, and can't be deleted right now."
 msgstr "Ce bon de location a des factures validées et ne peut pas être supprimmé."
@@ -276,9 +286,21 @@ msgid "If you want to apply a discount on this order line."
 msgstr "Si vous souhaitez appliquez une réduction (en pourcent)."
 
 #. module: rent
+#: code:addons/rent/rent.py:990
+#, python-format
+msgid "You can't remove an ongoing/done rent order."
+msgstr "Vous ne pouvez pas supprimmer un bon de location en cours/terminé."
+
+#. module: rent
 #: view:rent.order:0
 msgid "Confirm"
 msgstr "Confirmer"
+
+#. module: rent
+#: code:addons/rent/rent.py:371
+#, python-format
+msgid "There is no incoming shipment associated to this rent order. It might be a service-only rent order, or the rent order hasn't been delivered yet."
+msgstr "Il n'y a pas de bon de réception associé à ce bon de location. Soit c'est un bon de location de service, soit les produits n'ont pas encore été livrés."
 
 #. module: rent
 #: view:rent.order.line:0
@@ -335,7 +357,13 @@ msgid "Date of the shipping."
 msgstr "Date de livraison"
 
 #. module: rent
-#: code:addons/rent/rent.py:1127
+#: code:addons/rent/rent.py:374
+#, python-format
+msgid "No Delivery Order"
+msgstr "Pas de bon livraison"
+
+#. module: rent
+#: code:addons/rent/rent.py:1270
 #, python-format
 msgid "Error !"
 msgstr "Erreur !"
@@ -346,7 +374,7 @@ msgid "Rent default begin/shipping"
 msgstr "Date de début/livraison par défaut"
 
 #. module: rent
-#: code:addons/rent/rent.py:418
+#: code:addons/rent/rent.py:438
 #, python-format
 msgid "You can't cancel an order in this state."
 msgstr "Vous ne pouvez pas annuler une commande dans cet état."
@@ -434,6 +462,7 @@ msgid "This rent order contains only services, no shipping will be done."
 msgstr "Ce bon de location ne contient que des produits de type service, aucun bon de livraison/réception ne sera créé"
 
 #. module: rent
+#: model:ir.actions.server,name:rent.action_server_show_invoices
 #: view:rent.order:0
 #: field:rent.order,invoices_ids:0
 msgid "Invoices"
@@ -462,7 +491,7 @@ msgstr "Total HT"
 #. module: rent
 #: help:res.company,rent_afternoon_end:0
 msgid "This time will be used as the time of the rent end date."
-msgstr "Cette heure sera utilisée comme heure de find des bons locations."
+msgstr "Cette heure sera utilisée comme heure de fin des bons locations."
 
 #. module: rent
 #: view:rent.order:0
@@ -481,9 +510,14 @@ msgid "Invoiced"
 msgstr "Facturé"
 
 #. module: rent
-#: field:rent.order,rent_duration_unity:0
-msgid "Unity"
-msgstr "Unité"
+#: constraint:rent.order:0
+msgid "You can't use this duration unity with this invoicing period !"
+msgstr "Vous ne pouvez pas utiliser cette unité de durée avec cet interval de facturation."
+
+#. module: rent
+#: field:rent.interval,not_allowed_duration_unities:0
+msgid "Duration not allowed with this interval !"
+msgstr "Unité de durée incompatible avec cet interval !"
 
 #. module: rent
 #: field:res.company,rent_morning_begin:0
@@ -496,7 +530,7 @@ msgid "How many products to rent."
 msgstr "Nombre de produits à louer."
 
 #. module: rent
-#: code:addons/rent/rent.py:1183
+#: code:addons/rent/rent.py:1326
 #, python-format
 msgid "You don't have enought quantity of this product. You asked %d, but there are %d available. You can continue, but you are warned."
 msgstr "Vous n'avez pas assez de quantité en stock. Vous en avez demandé %d, mais le stock est de %d."
@@ -507,8 +541,8 @@ msgid "Rent duration unity in which the price is defined."
 msgstr "Unité de durée pour à laquelle correspond le prix."
 
 #. module: rent
-#: code:addons/rent/rent.py:393
-#: code:addons/rent/rent.py:398
+#: code:addons/rent/rent.py:413
+#: code:addons/rent/rent.py:418
 #, python-format
 msgid "You can't cancel this order."
 msgstr "Vous ne pouvez pas annuler cette commande."
@@ -563,7 +597,12 @@ msgstr "Le client n'a pas d'adresse définie."
 #. module: rent
 #: sql_constraint:rent.order:0
 msgid "The begin date must later than the order date."
-msgstr "The begin date must later than the order date."
+msgstr "La date de début doit être superieure à la date du bon de location."
+
+#. module: rent
+#: model:ir.actions.server,name:rent.action_server_show_incoming_shipment
+msgid "Incoming Shipment"
+msgstr "Bon de réception"
 
 #. module: rent
 #: field:rent.order,date_created:0
@@ -589,7 +628,7 @@ msgid "Quotation / Rent Order"
 msgstr "Devis / Bon de location"
 
 #. module: rent
-#: code:addons/rent/rent.py:607
+#: code:addons/rent/rent.py:629
 #, python-format
 msgid "Invoice %d/%d"
 msgstr "Facture %d/%d"
@@ -605,7 +644,7 @@ msgid "Compute"
 msgstr "Calculer"
 
 #. module: rent
-#: code:addons/rent/rent.py:659
+#: code:addons/rent/rent.py:688
 #, python-format
 msgid "Invalid duration unity"
 msgstr "Unité de durée invalide"
@@ -626,14 +665,15 @@ msgid "Companies"
 msgstr "Sociétés"
 
 #. module: rent
-#: view:rent.order:0
-msgid "Are you sure that you want to stop this rent order now ?"
-msgstr "Êtes-vous sur de vouloir arreter le location maintenant ?"
+#: field:rent.order,total_with_taxes_with_discount:0
+msgid "Total (with discount)"
+msgstr "Total (avec réduction)"
 
 #. module: rent
 #: code:addons/rent/rent.py:116
-#: code:addons/rent/rent.py:418
-#: code:addons/rent/rent.py:459
+#: code:addons/rent/rent.py:438
+#: code:addons/rent/rent.py:479
+#: code:addons/rent/rent.py:991
 #, python-format
 msgid "Error"
 msgstr "Erreur"
@@ -712,7 +752,7 @@ msgid "This description will be used in invoices."
 msgstr "Cette description sera utilisé dans le rapport."
 
 #. module: rent
-#: code:addons/rent/rent.py:578
+#: code:addons/rent/rent.py:598
 #, python-format
 msgid "Rental from %s to %s, invoice %d/%d.\n"
 "Invoice for the period from %s to %s."
@@ -720,12 +760,17 @@ msgstr "Location du %s au %s, facture %d/%d.\n"
 "Facture pour la periode du %s au %s."
 
 #. module: rent
+#: view:rent.order:0
+msgid "Are you sure that you want to stop this rent order now ? You can't restart a stopped order!"
+msgstr "Êtes-vous sur de vouloir arret ce bon de location ? Vous ne pourrez pas le redémarrer."
+
+#. module: rent
 #: field:product.product,rent_price_unity:0
 msgid "Rent Price Unity"
 msgstr "Unité pour le prix de location"
 
 #. module: rent
-#: code:addons/rent/rent.py:562
+#: code:addons/rent/rent.py:582
 #, python-format
 msgid " at "
 msgstr " à "
@@ -751,7 +796,7 @@ msgid "Rent Order reference must be unique !"
 msgstr "La référence doit être unique !"
 
 #. module: rent
-#: code:addons/rent/rent.py:399
+#: code:addons/rent/rent.py:419
 #, python-format
 msgid "This order have confirmed shipping orders !"
 msgstr "Ce bon de location a des bon de livraisons/réceptions qui sont confirmés."
@@ -762,13 +807,25 @@ msgid "This time will be used as default rent begin date/time if you select 'Tom
 msgstr "Cette heure sera utilisée comme heure de début par défaut si vous sélectionnez 'Demain (Matin)' comme début par defaut."
 
 #. module: rent
-#: code:addons/rent/rent.py:668
+#: code:addons/rent/rent.py:697
 #, python-format
 msgid "You can't use a monthly invoice period if the rent duration is less than 2 months. Use the 'Once' period in this case."
 msgstr "Vous ne pouvez pas utiliser une facturation mensuelle sur la durée est inferieure à 2 mois. Utilisez une facture unique."
 
 #. module: rent
-#: code:addons/rent/rent.py:1195
+#: code:addons/rent/rent.py:375
+#, python-format
+msgid "There is no delivery order associated to this rent order. It might be a service-only rent order, or the rent order hasn't been confirmed yet."
+msgstr "Il n'y a pas de bon de livraison associé à cet bon de location. Soit c'est un bon de location de services, soit il n'a pas encore été confirmé."
+
+#. module: rent
+#: code:addons/rent/rent.py:370
+#, python-format
+msgid "No Incoming Shipment"
+msgstr "Pas de bon de réception"
+
+#. module: rent
+#: code:addons/rent/rent.py:1338
 #: model:ir.model,name:rent.model_product_product
 #: field:rent.order.line,product_id:0
 #, python-format
@@ -827,7 +884,7 @@ msgid "The reference is a unique identifier that identify this order."
 msgstr "La référence est un identifiant unique qui identifie ce bon de location."
 
 #. module: rent
-#: code:addons/rent/rent.py:1182
+#: code:addons/rent/rent.py:1325
 #, python-format
 msgid "Not enought quantity !"
 msgstr "Pas assez de produits !"
@@ -836,6 +893,11 @@ msgstr "Pas assez de produits !"
 #: field:rent.order.line,product_type:0
 msgid "Type of product"
 msgstr "Type de produit"
+
+#. module: rent
+#: view:rent.order:0
+msgid "Generate invoices manually"
+msgstr "Générer les factures manuellement"
 
 #. module: rent
 #: field:rent.order,date_begin_rent:0
@@ -853,7 +915,7 @@ msgid "Order"
 msgstr "Commande"
 
 #. module: rent
-#: code:addons/rent/rent.py:1127
+#: code:addons/rent/rent.py:1270
 #, python-format
 msgid "There is no income account defined for this product: \"%s\" (id:%d)"
 msgstr "Il n'y a pas de compte définit pour ce produit: \"%s\" (id:%d)"
@@ -864,14 +926,9 @@ msgid "Global discount (%)"
 msgstr "Réduction globale (%)"
 
 #. module: rent
-#: field:rent.order,total_with_taxes_with_discount:0
-msgid "Total (with discount)"
-msgstr "Total (avec réduction)"
-
-#. module: rent
 #: view:rent.order:0
 msgid "Stops the rent manually"
-msgstr "Stops the rent manually"
+msgstr "Arreter la location manuellement"
 
 #. module: rent
 #: help:rent.order,rent_duration:0
