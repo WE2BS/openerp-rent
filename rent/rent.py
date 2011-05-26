@@ -794,7 +794,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         """
         Called by the workflow. Returns True once the product has been input shipped.
         """
-        print ids[0]
+
         order = self.get(ids[0])
         if not order.in_picking_id:
             return False
@@ -946,6 +946,18 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         _logger.debug('Finished rent orders invoice generation')
 
+    def check_period_and_unity(self, cr, uid, ids, context=None):
+
+        """
+        This checks that the unity is valid for the invoicing period, for example :
+            Day is a not a valid duration unity for a Month invoicing.
+        """
+
+        for order in self.filter(ids):
+            if order.rent_duration_unity in order.rent_invoice_period.not_allowed_duration_unities:
+                return False
+        return True
+
     def copy(self, cr, uid, id, default=None, context=None):
 
         """
@@ -965,6 +977,16 @@ class RentOrder(osv.osv, ExtendedOsv):
         
         return super(RentOrder, self).copy(cr, uid, id, default, context=context)
 
+    def unlink(self, cr, uid, ids, context=None):
+
+        """
+        Avoid removing done/ongoing rent orders.
+        """
+
+        for order in self.filter(ids):
+            if order.state in ('ongoing', 'done'):
+                raise osv.except_osv(_('Error'), _("You can't remove an ongoing/done rent order."))
+        return super(RentOrder, self).unlink(cr, uid, ids, context)
 
     _name = 'rent.order'
     _rec_name = 'reference'
@@ -1100,6 +1122,10 @@ class RentOrder(osv.osv, ExtendedOsv):
         'shop_id' : 1, # TODO: Use ir.values to handle multi-company configuration
         'discount' : 0.0,
     }
+
+    _constraints = [
+        (check_period_and_unity, "You can't use this duration unity with this invoicing period !", ['rent_duration_unity']),
+    ]
 
     _sql_constraints = [
         ('ref_uniq', 'unique(reference)', 'Rent Order reference must be unique !'),

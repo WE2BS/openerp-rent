@@ -8,6 +8,7 @@
         <record id="interval_month" model="rent.interval">
             <field name="name">Monthly (Based on begin date)</field>
             <field name="method">get_invoices_for_month_period</field>
+            <field name="not_allowed_duration_unities" eval="[(6, 0, [uom_day])]"/>
         </record>
     </data>
 </openerp>
