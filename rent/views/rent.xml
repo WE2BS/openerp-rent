@@ -73,8 +73,8 @@
                             <group colspan="4" col="6">
                                 <field name="date_begin_rent"
                                     on_change="on_duration_changed(date_begin_rent,rent_duration,rent_duration_unity,shop_id,context)"/>
-                                <field name="date_out_shipping"/>
-                                <field name="date_in_shipping"/>
+                                <field name="date_out_shipping" attrs="{'readonly' : [('is_service_only', '=', True)]}"/>
+                                <field name="date_in_shipping" attrs="{'readonly' : [('is_service_only', '=', True)]}"/>
                                 <field name="rent_duration"
                                     on_change="on_duration_changed(date_begin_rent,rent_duration,rent_duration_unity,shop_id,context)"/>
                                 <field name="rent_duration_unity"

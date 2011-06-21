@@ -39,6 +39,8 @@ class InvoiceInterval(osv.osv, ExtendedOsv):
     _columns = {
         'name' : fields.char('Name', size=150, required=True, translate=True),
         'method' : fields.char('Method', size=255, required=True),
+        'not_allowed_duration_unities' : fields.many2many('product.uom', 'rent_interval_not_allowed_durations',
+            'interval_id', 'duration_id', string='Duration not allowed with this interval !'),
     }
 
 InvoiceInterval()

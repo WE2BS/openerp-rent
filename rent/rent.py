@@ -711,7 +711,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         # In the case of a price expressed in month, there is no problem, and the factor is just 1.
         line_price_factor = 1.0
         if order.rent_duration_unity.id == uom_year.id:
-            line_price_factor = 12.0
+            line_price_factor = 12.0 * order.rent_duration
 
         for i in range(1, order_duration_in_month+1):
 
@@ -794,7 +794,7 @@ class RentOrder(osv.osv, ExtendedOsv):
         """
         Called by the workflow. Returns True once the product has been input shipped.
         """
-        print ids[0]
+
         order = self.get(ids[0])
         if not order.in_picking_id:
             return False
@@ -946,10 +946,53 @@ class RentOrder(osv.osv, ExtendedOsv):
 
         _logger.debug('Finished rent orders invoice generation')
 
+    @report_bugs
+    def check_period_and_unity(self, cr, uid, ids, context=None):
+
+        """
+        This checks that the unity is valid for the invoicing period, for example :
+            Day is a not a valid duration unity for a Month invoicing.
+        """
+
+        for order in self.filter(ids):
+            if order.rent_duration_unity in order.rent_invoice_period.not_allowed_duration_unities:
+                return False
+        return True
+
+    @report_bugs
+    def copy(self, cr, uid, id, default=None, context=None):
+
+        """
+        We have to generate a new reference when we copy the object.
+        """
+
+        if not default:
+            default = {}
+
+        default.update({
+            'state': 'draft',
+            'invoices_ids': [],
+            'out_picking_id': False,
+            'in_picking_id' : False,
+            'reference': self.pool.get('ir.sequence').get(cr, uid, 'rent.order'),
+        })
+        
+        return super(RentOrder, self).copy(cr, uid, id, default, context=context)
+
+    @report_bugs
+    def unlink(self, cr, uid, ids, context=None):
+
+        """
+        Avoid removing done/ongoing rent orders.
+        """
+
+        for order in self.filter(ids):
+            if order.state in ('ongoing', 'done'):
+                raise osv.except_osv(_('Error'), _("You can't remove an ongoing/done rent order."))
+        return super(RentOrder, self).unlink(cr, uid, ids, context)
+
     _name = 'rent.order'
-    _sql_constraints = []
     _rec_name = 'reference'
-    _periods = {}
     _order = 'date_begin_rent ASC,reference DESC'
 
     _columns = {
@@ -1083,15 +1126,15 @@ class RentOrder(osv.osv, ExtendedOsv):
         'discount' : 0.0,
     }
 
+    _constraints = [
+        (check_period_and_unity, "You can't use this duration unity with this invoicing period !", ['rent_duration_unity']),
+    ]
+
     _sql_constraints = [
         ('ref_uniq', 'unique(reference)', 'Rent Order reference must be unique !'),
         ('begin_after_create', 'check(date_begin_rent >= date_created)', 'The begin date must later than the order date.'),
         ('valid_discount', 'check(discount >= 0 AND discount <= 100)', 'Discount must be a value between 0 and 100.'),
     ]
-
-    #_constraints = [
-    #    (check_have_lines, "You must defines some lines in your rent order !", ['rent_line_ids']),
-    #]
 
 class RentOrderLine(osv.osv, ExtendedOsv):
 
