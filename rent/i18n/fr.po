@@ -1,19 +1,19 @@
 # Translation of OpenERP Server.
 # This file contains the translation of the following modules:
-#	* rent
-#
+# 
 msgid ""
 msgstr ""
-"Project-Id-Version: OpenERP Server 6.0.2\n"
+"Project-Id-Version: OpenERP Rent\n"
 "Report-Msgid-Bugs-To: support@openerp.com\n"
-"POT-Creation-Date: 2011-05-26 10:18+0000\n"
-"PO-Revision-Date: 2011-05-26 10:18+0000\n"
-"Last-Translator: <>\n"
+"POT-Creation-Date: 2011-06-22 08:29+0000\n"
+"PO-Revision-Date: 2011-06-22 09:00+0000\n"
+"Last-Translator: Thibaut <thibaut.dirlik@gmail.com>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
-"Plural-Forms: \n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1)\n"
 
 #. module: rent
 #: selection:rent.order.line,product_type:0
@@ -22,8 +22,14 @@ msgstr "Service"
 
 #. module: rent
 #: constraint:rent.order.line:0
-msgid "You can't use this product type with this product. Check that the product is marked for rent or for sale. Moreover, Service products must be declared as 'Service' in the product view."
-msgstr "Vous ne pouvez pas utiliser ce produit avec ce type de produit. Vérifiez que le produit peut être loué ou acheté. De plus, les produits de type 'Service' doivent être défini comme tel dans la fiche produit."
+msgid ""
+"You can't use this product type with this product. Check that the product is"
+" marked for rent or for sale. Moreover, Service products must be declared as"
+" 'Service' in the product view."
+msgstr ""
+"Vous ne pouvez pas utiliser ce produit avec ce type de produit. Vérifiez que"
+" le produit peut être loué ou acheté. De plus, les produits de type "
+"'Service' doivent être défini comme tel dans la fiche produit."
 
 #. module: rent
 #: model:ir.actions.server,name:rent.action_server_show_delivery_order
@@ -39,18 +45,27 @@ msgstr "Aucune facture"
 #. module: rent
 #: help:rent.order,description:0
 msgid "A small description of the rent order. Used in the report."
-msgstr "Une description de l'objet du bon de location, utilisé dans le rapport."
+msgstr ""
+"Une description de l'objet du bon de location, utilisé dans le rapport."
 
 #. module: rent
 #: help:rent.order.line,unit_price:0
-msgid "The price per duration or the sale price, depending of the product type. For rented product, the price is expressed in the product rent unity, not the order rent unity! BE CAREFUL!"
-msgstr "Le prix par unité de durée, ou le prix de vente, selon le type de produit. Pour les produits loués, le prix est exprimé en unité de durée du PRODUIT, pas l'unité du bon de location."
+msgid ""
+"The price per duration or the sale price, depending of the product type. For"
+" rented product, the price is expressed in the product rent unity, not the "
+"order rent unity! BE CAREFUL!"
+msgstr ""
+"Le prix par unité de durée, ou le prix de vente, selon le type de produit. "
+"Pour les produits loués, le prix est exprimé en unité de durée du PRODUIT, "
+"pas l'unité du bon de location."
 
 #. module: rent
 #: code:addons/rent/rent.py:689
 #, python-format
 msgid "You must use a Month or Year unity with a Monthly invoicing period."
-msgstr "Vous devez utiliser des Mois ou des Années comme unité pour l'interval de facturation mensuel."
+msgstr ""
+"Vous devez utiliser des Mois ou des Années comme unité pour l'interval de "
+"facturation mensuel."
 
 #. module: rent
 #: selection:res.company,rent_default_begin:0
@@ -79,20 +94,35 @@ msgstr "Objet"
 
 #. module: rent
 #: help:res.company,rent_afternoon_begin:0
-msgid "This time will be used as default rent begin date/time if you select 'Tomorrow (Afternoon)' as default value."
-msgstr "Cette heure sera utilisée comme heure de début pour les bons de location si vous sélectionnez 'Demain (Après-midi)' comme valeur par default."
+msgid ""
+"This time will be used as default rent begin date/time if you select "
+"'Tomorrow (Afternoon)' as default value."
+msgstr ""
+"Cette heure sera utilisée comme heure de début pour les bons de location si "
+"vous sélectionnez 'Demain (Après-midi)' comme valeur par default."
 
 #. module: rent
 #: help:rent.order.line,product_type:0
-msgid "Select Rent if you want to rent this product. Service means that you will sell this product with the others rented products. Use it to sell some services like installation or assurances. Products which are sold will be invoiced once, with the first invoice."
-msgstr "Selectionnez 'Louable' si vous souhaitez louer ce produit. 'Service' signifie que vous allez vendre ce produit. Utilisez le pour les produits comme les assurances, ou de la manutention associée au bon de location (Installation, etc). Les produits de type 'Service' ne seront facturé qu'une seule fois."
+msgid ""
+"Select Rent if you want to rent this product. Service means that you will "
+"sell this product with the others rented products. Use it to sell some "
+"services like installation or assurances. Products which are sold will be "
+"invoiced once, with the first invoice."
+msgstr ""
+"Selectionnez 'Louable' si vous souhaitez louer ce produit. 'Service' "
+"signifie que vous allez vendre ce produit. Utilisez le pour les produits "
+"comme les assurances, ou de la manutention associée au bon de location "
+"(Installation, etc). Les produits de type 'Service' ne seront facturé qu'une"
+" seule fois."
 
 #. module: rent
 #: model:ir.module.module,description:rent.module_meta_information
-msgid "\n"
+msgid ""
+"\n"
 "    This module manages the leasing of products to partners.\n"
 "    "
-msgstr "\n"
+msgstr ""
+"\n"
 "    Ce module permet de louer des produits.\n"
 "    "
 
@@ -139,7 +169,8 @@ msgstr "rent.interval"
 #. module: rent
 #: help:rent.order,invoiced_rate:0
 msgid "Invoiced percent, calculated on the numver if invoices confirmed."
-msgstr "Pourcentage facturé, calculé à partir du nombre de factures confirmées."
+msgstr ""
+"Pourcentage facturé, calculé à partir du nombre de factures confirmées."
 
 #. module: rent
 #: code:addons/rent/rent.py:696
@@ -153,9 +184,7 @@ msgid "Tomorrow (Morning)"
 msgstr "Demain (Matin)"
 
 #. module: rent
-#: view:rent.order:0
-#: field:rent.order,notes:0
-#: view:rent.order.line:0
+#: view:rent.order:0 field:rent.order,notes:0 view:rent.order.line:0
 #: field:rent.order.line,notes:0
 msgid "Notes"
 msgstr "Notes"
@@ -166,8 +195,7 @@ msgid "Go back to draft"
 msgstr "Remettre en brouillon"
 
 #. module: rent
-#: field:rent.order,total_taxes:0
-#: view:rent.order.line:0
+#: field:rent.order,total_taxes:0 view:rent.order.line:0
 #: field:rent.order.line,tax_ids:0
 msgid "Taxes"
 msgstr "Taxes"
@@ -183,8 +211,7 @@ msgid "rent.order.line"
 msgstr "rent.order.line"
 
 #. module: rent
-#: view:rent.order:0
-#: selection:rent.order,state:0
+#: view:rent.order:0 selection:rent.order,state:0
 #: selection:rent.order.line,state:0
 msgid "Ongoing"
 msgstr "En cours"
@@ -195,8 +222,7 @@ msgid "The price must be superior to 0."
 msgstr "Le prix doit être superieur à 0."
 
 #. module: rent
-#: selection:rent.order,state:0
-#: selection:rent.order.line,state:0
+#: selection:rent.order,state:0 selection:rent.order.line,state:0
 msgid "Cancelled"
 msgstr "Annulé"
 
@@ -209,11 +235,6 @@ msgstr "Date de retour"
 #: field:rent.order.line,duration_unit_price:0
 msgid "Duration Unit Price"
 msgstr "Prix par durée"
-
-#. module: rent
-#: field:rent.order,rent_duration_unity:0
-msgid "Unity"
-msgstr "Unité"
 
 #. module: rent
 #: model:rent.interval,name:rent.interval_once
@@ -252,8 +273,7 @@ msgid "The Rent Order \"%s\" has been reset."
 msgstr "Le bon de location \"%s\" a été réinitialisé."
 
 #. module: rent
-#: model:ir.ui.menu,name:rent.rent_order_menu
-#: view:rent.order:0
+#: model:ir.ui.menu,name:rent.rent_order_menu view:rent.order:0
 msgid "Rent Orders"
 msgstr "Bons de location"
 
@@ -266,7 +286,8 @@ msgstr "Lignes de ce bon de location."
 #: code:addons/rent/rent.py:414
 #, python-format
 msgid "This order have confirmed invoice, and can't be deleted right now."
-msgstr "Ce bon de location a des factures validées et ne peut pas être supprimmé."
+msgstr ""
+"Ce bon de location a des factures validées et ne peut pas être supprimmé."
 
 #. module: rent
 #: field:rent.order,partner_order_address_id:0
@@ -274,8 +295,7 @@ msgid "Ordering Address"
 msgstr "Adresse de commande"
 
 #. module: rent
-#: view:rent.order:0
-#: selection:rent.order,state:0
+#: view:rent.order:0 selection:rent.order,state:0
 #: selection:rent.order.line,state:0
 msgid "Confirmed"
 msgstr "Confirmé"
@@ -299,8 +319,12 @@ msgstr "Confirmer"
 #. module: rent
 #: code:addons/rent/rent.py:371
 #, python-format
-msgid "There is no incoming shipment associated to this rent order. It might be a service-only rent order, or the rent order hasn't been delivered yet."
-msgstr "Il n'y a pas de bon de réception associé à ce bon de location. Soit c'est un bon de location de service, soit les produits n'ont pas encore été livrés."
+msgid ""
+"There is no incoming shipment associated to this rent order. It might be a "
+"service-only rent order, or the rent order hasn't been delivered yet."
+msgstr ""
+"Il n'y a pas de bon de réception associé à ce bon de location. Soit c'est un"
+" bon de location de service, soit les produits n'ont pas encore été livrés."
 
 #. module: rent
 #: view:rent.order.line:0
@@ -310,7 +334,9 @@ msgstr "Information produit"
 #. module: rent
 #: help:rent.order,is_service_only:0
 msgid "True if the rent order only rent services products."
-msgstr "Cette case est cochée sur le bon de location ne contient que des produits de type service."
+msgstr ""
+"Cette case est cochée sur le bon de location ne contient que des produits de"
+" type service."
 
 #. module: rent
 #: constraint:res.company:0
@@ -319,20 +345,21 @@ msgstr "Erreur ! Vous ne pouvez pas créer de sociétés récursives"
 
 #. module: rent
 #: help:rent.order,state:0
-msgid "Gives the state of the rent order :\n"
+msgid ""
+"Gives the state of the rent order :\n"
 "- Quotation\n"
 "- Confirmed\n"
 "- Ongoing (Products have been shipped)\n"
 "- Done (Products have been get back)"
-msgstr "Etat du bon de commande :\n"
+msgstr ""
+"Etat du bon de commande :\n"
 "- Devis\n"
 "- Confirmé\n"
 "- En cours (Produits livrés)\n"
 "- Terminé (Produits récupérés)"
 
 #. module: rent
-#: model:ir.actions.act_window,name:rent.rent_action_form
-#: view:rent.order:0
+#: model:ir.actions.act_window,name:rent.rent_action_form view:rent.order:0
 msgid "Rent Order"
 msgstr "Bon de location"
 
@@ -395,8 +422,7 @@ msgid "Can be rented"
 msgstr "Peut être loué"
 
 #. module: rent
-#: selection:rent.order,state:0
-#: selection:rent.order.line,state:0
+#: selection:rent.order,state:0 selection:rent.order.line,state:0
 msgid "Done"
 msgstr "Terminé"
 
@@ -406,8 +432,7 @@ msgid "Configuration"
 msgstr "Configuration"
 
 #. module: rent
-#: field:rent.order,state:0
-#: field:rent.order.line,state:0
+#: field:rent.order,state:0 field:rent.order.line,state:0
 msgid "State"
 msgstr "État"
 
@@ -418,8 +443,16 @@ msgstr "Démarrer la location manuellement"
 
 #. module: rent
 #: help:rent.order.line,real_unit_price:0
-msgid "This price correspond to the price of the product, not matter its type. In the case of a rented product, its equal to the unit price expressed in order duration unity, and in the case of a service product, to the sale price of the product."
-msgstr "Ce prix correspond au prix du produit, peut importe son type. Dans le cas d'un produit loué, c'est son prix unitaire exprimé dans l'unité du bon de location, and dans le cas d'un produit de type service, c'est son prix de vente."
+msgid ""
+"This price correspond to the price of the product, not matter its type. In "
+"the case of a rented product, its equal to the unit price expressed in order"
+" duration unity, and in the case of a service product, to the sale price of "
+"the product."
+msgstr ""
+"Ce prix correspond au prix du produit, peut importe son type. Dans le cas "
+"d'un produit loué, c'est son prix unitaire exprimé dans l'unité du bon de "
+"location, and dans le cas d'un produit de type service, c'est son prix de "
+"vente."
 
 #. module: rent
 #: view:rent.order.line:0
@@ -438,8 +471,12 @@ msgstr "Cochez cette case si vous voulez louer ce produit."
 
 #. module: rent
 #: help:res.company,rent_default_begin:0
-msgid "Specify the default rent begin date/time value you want to have when you create a new rent order."
-msgstr "Spécifie l'heure de début de location que vous aurez lorsque vous crérez un bon de location."
+msgid ""
+"Specify the default rent begin date/time value you want to have when you "
+"create a new rent order."
+msgstr ""
+"Spécifie l'heure de début de location que vous aurez lorsque vous crérez un "
+"bon de location."
 
 #. module: rent
 #: field:rent.order.line,discount:0
@@ -459,12 +496,13 @@ msgstr "Fin d'après-midi"
 #. module: rent
 #: view:rent.order:0
 msgid "This rent order contains only services, no shipping will be done."
-msgstr "Ce bon de location ne contient que des produits de type service, aucun bon de livraison/réception ne sera créé"
+msgstr ""
+"Ce bon de location ne contient que des produits de type service, aucun bon "
+"de livraison/réception ne sera créé"
 
 #. module: rent
 #: model:ir.actions.server,name:rent.action_server_show_invoices
-#: view:rent.order:0
-#: field:rent.order,invoices_ids:0
+#: view:rent.order:0 field:rent.order,invoices_ids:0
 msgid "Invoices"
 msgstr "Factures"
 
@@ -494,8 +532,7 @@ msgid "This time will be used as the time of the rent end date."
 msgstr "Cette heure sera utilisée comme heure de fin des bons locations."
 
 #. module: rent
-#: view:rent.order:0
-#: field:rent.order,salesman:0
+#: view:rent.order:0 field:rent.order,salesman:0
 msgid "Salesman"
 msgstr "Vendeur"
 
@@ -512,12 +549,14 @@ msgstr "Facturé"
 #. module: rent
 #: constraint:rent.order:0
 msgid "You can't use this duration unity with this invoicing period !"
-msgstr "Vous ne pouvez pas utiliser cette unité de durée avec cet interval de facturation."
+msgstr ""
+"Vous ne pouvez pas utiliser cette unité de durée avec cet interval de "
+"facturation."
 
 #. module: rent
-#: field:rent.interval,not_allowed_duration_unities:0
-msgid "Duration not allowed with this interval !"
-msgstr "Unité de durée incompatible avec cet interval !"
+#: field:rent.order,rent_duration_unity:0
+msgid "Unity"
+msgstr "Unité"
 
 #. module: rent
 #: field:res.company,rent_morning_begin:0
@@ -532,8 +571,12 @@ msgstr "Nombre de produits à louer."
 #. module: rent
 #: code:addons/rent/rent.py:1326
 #, python-format
-msgid "You don't have enought quantity of this product. You asked %d, but there are %d available. You can continue, but you are warned."
-msgstr "Vous n'avez pas assez de quantité en stock. Vous en avez demandé %d, mais le stock est de %d."
+msgid ""
+"You don't have enought quantity of this product. You asked %d, but there are"
+" %d available. You can continue, but you are warned."
+msgstr ""
+"Vous n'avez pas assez de quantité en stock. Vous en avez demandé %d, mais le"
+" stock est de %d."
 
 #. module: rent
 #: help:product.product,rent_price_unity:0
@@ -541,8 +584,7 @@ msgid "Rent duration unity in which the price is defined."
 msgstr "Unité de durée pour à laquelle correspond le prix."
 
 #. module: rent
-#: code:addons/rent/rent.py:413
-#: code:addons/rent/rent.py:418
+#: code:addons/rent/rent.py:413 code:addons/rent/rent.py:418
 #, python-format
 msgid "You can't cancel this order."
 msgstr "Vous ne pouvez pas annuler cette commande."
@@ -575,8 +617,12 @@ msgstr "Le bon de réception qui gère les mouvements Client->Stock."
 
 #. module: rent
 #: help:product.product,rent_price:0
-msgid "The price is expressed for the duration unity defined in the company configuration."
-msgstr "Le prix est exprimé en fonction de l'unité de durée définie dans la configuration de la société."
+msgid ""
+"The price is expressed for the duration unity defined in the company "
+"configuration."
+msgstr ""
+"Le prix est exprimé en fonction de l'unité de durée définie dans la "
+"configuration de la société."
 
 #. module: rent
 #: help:rent.order,discount:0
@@ -585,8 +631,11 @@ msgstr "Applique une réduction globale sur cette commande."
 
 #. module: rent
 #: help:rent.order,rent_duration_unity:0
-msgid "The duration unity, available choices depends of your company configuration."
-msgstr "L'unité de durée. Les choix disponibles dépendent de la configuration de votre société."
+msgid ""
+"The duration unity, available choices depends of your company configuration."
+msgstr ""
+"L'unité de durée. Les choix disponibles dépendent de la configuration de "
+"votre société."
 
 #. module: rent
 #: code:addons/rent/rent.py:86
@@ -616,8 +665,7 @@ msgid "You must define a least one default address for this client."
 msgstr "Vous devez définir au moin une adresse pour ce client."
 
 #. module: rent
-#: view:rent.order:0
-#: selection:rent.order,state:0
+#: view:rent.order:0 selection:rent.order,state:0
 #: selection:rent.order.line,state:0
 msgid "Quotation"
 msgstr "Devis"
@@ -670,10 +718,8 @@ msgid "Total (with discount)"
 msgstr "Total (avec réduction)"
 
 #. module: rent
-#: code:addons/rent/rent.py:116
-#: code:addons/rent/rent.py:438
-#: code:addons/rent/rent.py:479
-#: code:addons/rent/rent.py:991
+#: code:addons/rent/rent.py:116 code:addons/rent/rent.py:438
+#: code:addons/rent/rent.py:479 code:addons/rent/rent.py:991
 #, python-format
 msgid "Error"
 msgstr "Erreur"
@@ -681,7 +727,9 @@ msgstr "Erreur"
 #. module: rent
 #: help:rent.order,partner_id:0
 msgid "Select a customer. Only partners marked as customer will be shown."
-msgstr "Selectionnez un partenaire. Seul les partenaires marqués comme client sont affichés."
+msgstr ""
+"Selectionnez un partenaire. Seul les partenaires marqués comme client sont "
+"affichés."
 
 #. module: rent
 #: field:rent.order,total_products_buy_price:0
@@ -689,8 +737,7 @@ msgid "Products buy price"
 msgstr "Valeur des produits (basé sur le prix d'achat)"
 
 #. module: rent
-#: sql_constraint:rent.order:0
-#: sql_constraint:rent.order.line:0
+#: sql_constraint:rent.order:0 sql_constraint:rent.order.line:0
 msgid "Discount must be a value between 0 and 100."
 msgstr "La réduction doitê tre une valeur entre 0 et 100."
 
@@ -705,8 +752,7 @@ msgid "Quantity"
 msgstr "Quantité"
 
 #. module: rent
-#: code:addons/rent/product.py:79
-#: constraint:product.product:0
+#: code:addons/rent/product.py:79 constraint:product.product:0
 #, python-format
 msgid "The Rent price must be a positive value."
 msgstr "Le prix doit être une valeur positive."
@@ -718,8 +764,10 @@ msgstr "Entrez des informations que vous associez à ce bon de location."
 
 #. module: rent
 #: help:rent.order,partner_order_address_id:0
-msgid "The name and address of the contact who requested the order or quotation."
-msgstr "Le nom et l'adresse de la personne qui est à l'origine du bon de commande."
+msgid ""
+"The name and address of the contact who requested the order or quotation."
+msgstr ""
+"Le nom et l'adresse de la personne qui est à l'origine du bon de commande."
 
 #. module: rent
 #: help:rent.order,date_begin_rent:0
@@ -754,15 +802,21 @@ msgstr "Cette description sera utilisé dans le rapport."
 #. module: rent
 #: code:addons/rent/rent.py:598
 #, python-format
-msgid "Rental from %s to %s, invoice %d/%d.\n"
+msgid ""
+"Rental from %s to %s, invoice %d/%d.\n"
 "Invoice for the period from %s to %s."
-msgstr "Location du %s au %s, facture %d/%d.\n"
+msgstr ""
+"Location du %s au %s, facture %d/%d.\n"
 "Facture pour la periode du %s au %s."
 
 #. module: rent
 #: view:rent.order:0
-msgid "Are you sure that you want to stop this rent order now ? You can't restart a stopped order!"
-msgstr "Êtes-vous sur de vouloir arret ce bon de location ? Vous ne pourrez pas le redémarrer."
+msgid ""
+"Are you sure that you want to stop this rent order now ? You can't restart a"
+" stopped order!"
+msgstr ""
+"Êtes-vous sur de vouloir arret ce bon de location ? Vous ne pourrez pas le "
+"redémarrer."
 
 #. module: rent
 #: field:product.product,rent_price_unity:0
@@ -799,24 +853,37 @@ msgstr "La référence doit être unique !"
 #: code:addons/rent/rent.py:419
 #, python-format
 msgid "This order have confirmed shipping orders !"
-msgstr "Ce bon de location a des bon de livraisons/réceptions qui sont confirmés."
+msgstr ""
+"Ce bon de location a des bon de livraisons/réceptions qui sont confirmés."
 
 #. module: rent
 #: help:res.company,rent_morning_begin:0
-msgid "This time will be used as default rent begin date/time if you select 'Tomorrow (Morning)' as default value."
-msgstr "Cette heure sera utilisée comme heure de début par défaut si vous sélectionnez 'Demain (Matin)' comme début par defaut."
+msgid ""
+"This time will be used as default rent begin date/time if you select "
+"'Tomorrow (Morning)' as default value."
+msgstr ""
+"Cette heure sera utilisée comme heure de début par défaut si vous "
+"sélectionnez 'Demain (Matin)' comme début par defaut."
 
 #. module: rent
 #: code:addons/rent/rent.py:697
 #, python-format
-msgid "You can't use a monthly invoice period if the rent duration is less than 2 months. Use the 'Once' period in this case."
-msgstr "Vous ne pouvez pas utiliser une facturation mensuelle sur la durée est inferieure à 2 mois. Utilisez une facture unique."
+msgid ""
+"You can't use a monthly invoice period if the rent duration is less than 2 "
+"months. Use the 'Once' period in this case."
+msgstr ""
+"Vous ne pouvez pas utiliser une facturation mensuelle sur la durée est "
+"inferieure à 2 mois. Utilisez une facture unique."
 
 #. module: rent
 #: code:addons/rent/rent.py:375
 #, python-format
-msgid "There is no delivery order associated to this rent order. It might be a service-only rent order, or the rent order hasn't been confirmed yet."
-msgstr "Il n'y a pas de bon de livraison associé à cet bon de location. Soit c'est un bon de location de services, soit il n'a pas encore été confirmé."
+msgid ""
+"There is no delivery order associated to this rent order. It might be a "
+"service-only rent order, or the rent order hasn't been confirmed yet."
+msgstr ""
+"Il n'y a pas de bon de livraison associé à cet bon de location. Soit c'est "
+"un bon de location de services, soit il n'a pas encore été confirmé."
 
 #. module: rent
 #: code:addons/rent/rent.py:370
@@ -863,8 +930,7 @@ msgid "Untaxed amount"
 msgstr "Montant HT"
 
 #. module: rent
-#: view:rent.order:0
-#: field:rent.order,partner_id:0
+#: view:rent.order:0 field:rent.order,partner_id:0
 msgid "Customer"
 msgstr "Client"
 
@@ -881,7 +947,8 @@ msgstr "rent.order"
 #. module: rent
 #: help:rent.order,reference:0
 msgid "The reference is a unique identifier that identify this order."
-msgstr "La référence est un identifiant unique qui identifie ce bon de location."
+msgstr ""
+"La référence est un identifiant unique qui identifie ce bon de location."
 
 #. module: rent
 #: code:addons/rent/rent.py:1325
@@ -942,8 +1009,7 @@ msgstr "Le Régime Fiscal agit sur les taxes et les comptes."
 
 #. module: rent
 #: model:ir.module.module,shortdesc:rent.module_meta_information
-#: selection:rent.order.line,product_type:0
-#: view:res.company:0
+#: selection:rent.order.line,product_type:0 view:res.company:0
 msgid "Rent"
 msgstr "Location"
 
@@ -964,8 +1030,8 @@ msgid "Duration"
 msgstr "Durée"
 
 #. module: rent
-#: view:rent.order:0
-#: field:rent.order,total_with_taxes:0
+#: view:rent.order:0 field:rent.order,total_with_taxes:0
 msgid "Total"
 msgstr "Total"
+
 

@@ -16,3 +16,4 @@ Currently, OpenERP Rent is only compatible with OpenERP 6.0 (but should be porte
     install
     configure
     use
+    contribute
