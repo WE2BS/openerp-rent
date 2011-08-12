@@ -16,6 +16,11 @@ Here is a list of the required modules, if you want to install them manually :
     * `Aeroo Lib`_ (RC2 or superior)
     * `OpenLib`_ (0.2.5 or superior)
 
+Moreover, you need these python packages :
+
+    * genshi
+    * httplib2
+
 .. _Github project page:
 .. _Github repository: http://github.com/WE2BS/openerp-rent
 .. _Aeroo Report: https://launchpad.net/aeroo
