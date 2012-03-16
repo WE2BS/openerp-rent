@@ -1272,9 +1272,9 @@ class RentOrderLine(osv.osv, ExtendedOsv):
 
             # The price factor is not applied on services product (which are invoiced only once)
             if rent_line.product_type != 'service':
-                unit_price = rent_line.duration_unit_price / line_price_factor
+                unit_price = rent_line.real_unit_price / line_price_factor
             else:
-                unit_price = rent_line.duration_unit_price
+                unit_price = rent_line.real_unit_price
 
             invoice_line_data = {
                 'name': rent_line.description,
