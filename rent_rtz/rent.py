@@ -70,7 +70,7 @@ class RentOrderRtz(osv.osv, ExtendedOsv):
         """
 
         # We use the lang of the partner instead of the lang of the user to put the text into the invoice.
-        partner = self.get(order.partner_id, _object='res.partner')
+        partner = order.partner_id
         partner_lang = self.get(code=partner.lang, _object='res.lang')
         context = {'lang' : partner.lang}
         
@@ -125,15 +125,15 @@ class RentOrderRtzLine(osv.osv, ExtendedOsv):
         return COEFF_MAPPING['more']
 
     @report_bugs
-    def get_invoice_lines_data(self, cursor, user_id, ids, context=None):
+    def get_invoice_lines_data(self, cr, uid, ids, line_price_factor, first_invoice=False, context=None):
 
         """
         We append the coeff value tu the name in the invoice line.
         """
 
         # TODO: Find a way to avoid the double browse (the one within super() and this one
-        lines = self.browse(cursor, user_id, ids, context)
-        result = super(RentOrderRtzLine, self).get_invoice_lines_data(cursor, user_id, ids, context)
+        lines = self.browse(cr, uid, ids, context)
+        result = super(RentOrderRtzLine, self).get_invoice_lines_data(cr, uid, ids, line_price_factor, first_invoice, context)
 
         for index, line_data in enumerate(result):
             line_data['name'] += ' (Coeff: %d)' % lines[index].coeff

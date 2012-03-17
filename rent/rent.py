@@ -610,7 +610,7 @@ class RentOrder(osv.osv, ExtendedOsv):
     def get_invoice_at(self, cr, uid, order, data):
 
         """
-        Generates an invoice at the specified date. The two last arguenbts current and max
+        Generates an invoice at the specified date. The two last arguments current and max
         defines the maximum number of invoices and the current invoice number. For example: current=4, max=12.
         """
 
